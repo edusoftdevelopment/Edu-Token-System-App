@@ -1,5 +1,6 @@
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
@@ -58,9 +59,9 @@ class _LoginPageState extends State<LoginPage> {
                     foreground: Paint()
                       ..shader = const LinearGradient(
                         colors: [
-                          Color(0xFF0D47A1), // Dark Blue
-                          Color(0xFF1976D2), // Medium Blue
-                          Color(0xFF64B5F6), // Light Blue
+                          Color(0xFF0f2027), // Dark Navy
+                          Color(0xFF203a43), // Deep Blue
+                          Color(0xFF2c5364), // Blue-Gray
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -72,12 +73,22 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! Welcome AutoSizeText
                 AutoSizeText(
-                  "Welcome Back 👋",
+                  " Welcome Back 👋",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.kCustomBlueColor,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
+                    foreground: Paint()
+                      ..shader = const LinearGradient(
+                        colors: [
+                          Color(0xFF0f2027), // Dark Navy
+                          Color(0xFF203a43), // Deep Blue
+                          Color(0xFF2c5364), // Blue-Gray
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
                   ),
                 ),
+
                 const SizedBox(height: 6),
                 AutoSizeText(
                   "Login to continue",
@@ -135,17 +146,17 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! Login Button
                 CustomButton(
-                  backgroundColor:
-                      (_emailController.text.isNotEmpty &&
-                          _passwordController.text.isNotEmpty)
-                      ? AppColors.kCustomButtonsColor
-                      : AppColors.kCustomGrayButtonColor,
-                  textColor:
-                      (_emailController.text.isNotEmpty &&
-                          _passwordController.text.isNotEmpty)
-                      ? Colors.white
-                      : AppColors.kCustomBlueColor,
-                  name: "Sign In",
+                  // backgroundColor:
+                  //     (_emailController.text.isNotEmpty &&
+                  //         _passwordController.text.isNotEmpty)
+                  //     ? AppColors.kCustomButtonsColor
+                  // //     : AppColors.kCustomGrayButtonColor,
+                  // textColor:
+                  //     (_emailController.text.isNotEmpty &&
+                  //         _passwordController.text.isNotEmpty)
+                  //     ? Colors.white
+                  //     : AppColors.kCustomBlueColor,
+                  name: "Login In",
                   onPressed: () {
                     Navigator.push(
                       context,

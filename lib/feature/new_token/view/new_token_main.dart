@@ -1,5 +1,6 @@
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -17,7 +18,6 @@ class _NewTokenMainState extends State<NewTokenMain> {
   late TextEditingController _numberController;
   DateTime? _currentDateTime;
   // Control width from yahan
-  double dropdownWidth = 350;
 
   @override
   void initState() {
@@ -42,11 +42,15 @@ class _NewTokenMainState extends State<NewTokenMain> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final screenHeight = constraints.maxHeight;
+        final screenWidth = constraints.maxWidth;
+        double dropdownWidth = screenWidth;
         return LayoutBuilder(
           builder: (context, constraints) {
             final height = constraints.maxHeight;
             // final width = constraints.maxWidth;
             return Scaffold(
+              backgroundColor: Colors.white,
               appBar: CustomAppBarEduTokenSystem(
                 backgroundColor: AppColors.kAppBarColor,
                 title: 'New Token',
@@ -61,6 +65,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  SizedBox(height: screenHeight * 0.03),
                   StreamBuilder<DateTime>(
                     stream: _timeStream(),
                     builder: (context, snapshot) {
@@ -97,11 +102,11 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       );
                     },
                   ),
-                  SizedBox(height: height * 0.02),
+                  SizedBox(height: height * 0.03),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: AutoSizeText(
-                      'Choose vehicle',
+                      'Choose Vehicle',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -109,6 +114,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     ),
                   ),
 
+                  SizedBox(height: height * 0.01),
                   // PopupMenuButton with same styling as dropdown
                   Container(
                     width: dropdownWidth,
@@ -137,7 +143,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                         return PopupMenuItem<String>(
                           value: vehicle,
                           child: Container(
-                            width: dropdownWidth - 40, // Adjust for padding
+                            width: dropdownWidth, // Adjust for padding
                             padding: const EdgeInsets.symmetric(vertical: 6.0),
                             child: AutoSizeText(
                               vehicle,
@@ -185,7 +191,18 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: height * 0.01),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      'Enter Vehicle Number',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
                   CustomTextFormTokenSystem(
                     hintText: 'Vehicle Number',
                     controller: _numberController,

@@ -1,5 +1,6 @@
+import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/core/utils/utils.dart';
 
-part of 'common.dart';
 class CustomButton extends StatelessWidget {
   const CustomButton({
     required this.onPressed,
@@ -33,6 +34,7 @@ class CustomButton extends StatelessWidget {
   final ButtonStyle? style;
   final Widget? widget;
   final Color? borderColor;
+
   @override
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
@@ -44,160 +46,46 @@ class CustomButton extends StatelessWidget {
         style:
             style ??
             ElevatedButton.styleFrom(
-              backgroundColor: backgroundColor ?? AppColors.kCustomButtonsColor,
+              padding: EdgeInsets.zero, // 🔹 important for gradient
               shape: RoundedRectangleBorder(
                 side: BorderSide(
                   color: borderColor ?? AppColors.kCustomBorderColor,
                 ),
                 borderRadius: BorderRadius.circular(borderRadius ?? 16),
               ),
-              padding: padding ?? EdgeInsets.all(allPadding ?? 16),
               elevation: 0,
+              backgroundColor: Colors.transparent, // 🔹 remove solid color
             ),
-        child:
-            widget ??
-            AutoSizeText(
-              name ?? 'Empty Button',
-              style: TextStyle(
-                color:
-                    textColor ??
-                    (darkMode ? AppColors.kWhite : Theme.of(context).cardColor),
-                fontWeight: fontWeight ?? FontWeight.w600, // Semibold
-                fontSize: fontSize ?? 16,
-              ),
-            ),
-      ),
-    );
-  }
-}
-
-///! Used for secondary actions like "Cancel"
-class CustomSecondaryButton extends StatelessWidget {
-  const CustomSecondaryButton({
-    required this.text,
-    super.key,
-    this.onPressed,
-    this.borderColor,
-    this.width,
-    // this.height = 48.0,
-    this.foreGroundColor,
-    this.borderRadius = 8.0,
-    this.fontSize,
-    this.fontWeight = FontWeight.w700,
-    this.textColor = AppColors.kMidnightBlue,
-    this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-  });
-  final String text;
-  final VoidCallback? onPressed;
-  final double? width;
-  // final double height;
-  final Color? foreGroundColor;
-  final double borderRadius;
-  final EdgeInsetsGeometry padding;
-  final Color? textColor;
-  final double? fontSize;
-  final FontWeight fontWeight;
-  final Color? borderColor;
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      // height: height,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: foreGroundColor ?? AppColors.kMidnightBlue,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            side: BorderSide(color: borderColor ?? AppColors.kMidnightBlue),
-          ),
-          padding: padding,
-        ),
-        child: AutoSizeText(
-          text,
-          presetFontSizes: [14.sp, 16.sp, 18.sp, 20.sp],
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontFamily: 'Roboto',
-            fontSize: fontSize ?? 16.sp,
-            color: textColor ?? AppColors.kMidnightBlue,
-            fontWeight: fontWeight,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-///! Used for toggle actions like "Precise: On"
-class CustomToggleButton extends StatelessWidget {
-  const CustomToggleButton({
-    required this.label,
-    required this.value,
-    super.key,
-    this.isSelected = false,
-    this.onPressed,
-    this.backgroundColor,
-    this.textColor,
-    this.selectedBackgroundColor,
-    this.selectedTextColor,
-    this.icon,
-    this.borderRadius = 80.0,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  });
-  final String label;
-  final String value;
-  final bool isSelected;
-  final VoidCallback? onPressed;
-  final Color? backgroundColor;
-  final Color? textColor;
-  final Color? selectedBackgroundColor;
-  final Color? selectedTextColor;
-  final IconData? icon;
-  final double borderRadius;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    // final bgColor = isSelected
-    //     ? (selectedBackgroundColor ?? AppColors.kWhite)
-    //     : (backgroundColor ?? AppColors.kGrey200);
-
-    final txtColor = isSelected
-        ? (selectedTextColor ?? const Color.fromARGB(255, 0, 122, 255))
-        : (textColor ?? Colors.grey.shade600);
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: Card(
-        shape: ContinuousRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
-        ),
-        child: Container(
-          padding: padding,
+        child: Ink(
           decoration: BoxDecoration(
-            //   color: bgColor,
-            borderRadius: BorderRadius.circular(borderRadius),
-            //   border: isSelected
-            //       ? Border.all(color: const Color(0xFF1976D2))
-            //       : null,
-          ),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16.sp, color: txtColor),
-                SizedBox(width: 6.w),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF0f2027), // Dark Navy
+                Color(0xFF203a43), // Deep Blue
+                Color(0xFF2c5364), // Blue-Gray
               ],
-              AutoSizeText(
-                '$label: $value',
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: txtColor,
-
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w600,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(borderRadius ?? 16),
+          ),
+          child: Container(
+            alignment: Alignment.center,
+            padding: padding ?? EdgeInsets.all(allPadding ?? 16),
+            child:
+                widget ??
+                AutoSizeText(
+                  name ?? 'Empty Button',
+                  style: TextStyle(
+                    color:
+                        textColor ??
+                        (darkMode
+                            ? AppColors.kWhite
+                            : Theme.of(context).cardColor),
+                    fontWeight: fontWeight ?? FontWeight.w600,
+                    fontSize: fontSize ?? 16,
+                  ),
                 ),
-              ),
-            ],
           ),
         ),
       ),
