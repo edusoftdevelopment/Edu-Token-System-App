@@ -72,7 +72,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       if (!snapshot.hasData) {
                         return Center(
                           child: LoadingAnimationWidget.staggeredDotsWave(
-                            color: Colors.blue,
+                            color: Color(0xFF2c5364),
                             size: 50,
                           ),
                         );
@@ -134,6 +134,11 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       ],
                     ),
                     child: PopupMenuButton<String>(
+                      constraints: BoxConstraints(
+                        minWidth:
+                            dropdownWidth, // 👈 dropdown button jitni width
+                        maxWidth: dropdownWidth, // 👈 force same width
+                      ),
                       onSelected: (value) {
                         setState(() {
                           selectedVehicle = value;
@@ -142,19 +147,26 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       itemBuilder: (context) => vehicles.map((String vehicle) {
                         return PopupMenuItem<String>(
                           value: vehicle,
-                          child: Container(
-                            width: dropdownWidth, // Adjust for padding
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: AutoSizeText(
-                              vehicle,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
+                          padding: EdgeInsets.zero, // 🔹 default padding hatao
+                          child: SizedBox(
+                            width: dropdownWidth, // 🔹 poore button jitni width
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 12,
+                              ),
+                              child: AutoSizeText(
+                                vehicle,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ),
                         );
                       }).toList(),
+
                       offset: const Offset(
                         0,
                         50,
