@@ -7,5 +7,6 @@ void main() async {
   await initialization();
   // [runApp] contains app
   runApp(const EduTokenSystem());
+  
 }
 
