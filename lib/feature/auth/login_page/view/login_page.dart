@@ -1,5 +1,7 @@
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
@@ -7,8 +9,6 @@ import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
-import 'package:edu_token_system_app/service/permission_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
@@ -26,22 +26,18 @@ class _LoginPageState extends State<LoginPage> {
   String? _serialNo;
   Future<String?> getSerialNo() async {
     try {
-      final isAllowed = await PermissionService.checkPhonePermission();
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
-      if (isAllowed) {
-        const platform = MethodChannel('com.example.edu_token_system_app');
-        try {
-          final serial =
-              await platform.invokeMethod('getSerialNumber') as String;
-
-          return serial;
-        } on PlatformException catch (e) {
-          return "Failed to get serial number: '${e.message}'";
-        }
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor;
       }
       return null;
-    } on PlatformException catch (e) {
-      log("Failed to get device serial number: '${e.message}'.");
+    } catch (e) {
+      print('Error getting device ID: $e');
       return null;
     }
   }
@@ -77,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.kWhite,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
