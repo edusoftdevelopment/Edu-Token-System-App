@@ -1,3 +1,5 @@
+import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/app/app.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
@@ -14,7 +16,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
-
+  DateTime? _currentDateTime;
   // Control width from yahan
   double dropdownWidth = 350;
 
@@ -22,6 +24,10 @@ class _NewTokenMainState extends State<NewTokenMain> {
   void initState() {
     super.initState();
     _numberController = TextEditingController();
+  }
+
+  Stream<DateTime> _timeStream() {
+    return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
   }
 
   @override
@@ -59,7 +65,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                   SizedBox(height: height * 0.02),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: AutoSizeText(
                       'Choose vehicle',
                       style: TextStyle(
                         fontSize: 16,
@@ -98,7 +104,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                           child: Container(
                             width: dropdownWidth - 40, // Adjust for padding
                             padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Text(
+                            child: AutoSizeText(
                               vehicle,
                               style: const TextStyle(
                                 fontSize: 16,
@@ -129,7 +135,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            AutoSizeText(
                               selectedVehicle ?? 'Select Vehicle',
                               style: TextStyle(
                                 fontSize: 16,
@@ -152,32 +158,62 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  AutoSizeText(
                     selectedVehicle == null
                         ? 'No vehicle selected'
                         : 'Selected: $selectedVehicle',
                     style: const TextStyle(fontSize: 15),
                   ),
+                  StreamBuilder<DateTime>(
+                    stream: _timeStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const AutoSizeText("Loading...");
+                      }
+                      final now = snapshot.data!;
+                      _currentDateTime = now;
+                      final date = "${now.day}-${now.month}-${now.year}";
+                      final time =
+                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          AutoSizeText(
+                            "Date: $date",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          AutoSizeText(
+                            "Time: $time",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                   Spacer(),
                   CustomButton(
                     name: 'Save',
                     onPressed: () {
-                      // Current date and time
-                      DateTime now = DateTime.now();
-                      String formattedDateTime =
-                          '${now.day}/${now.month}/${now.year} at ${now.hour}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+                      if (_currentDateTime != null) {
+                        String formattedDateTime =
+                            '${_currentDateTime!.day}/${_currentDateTime!.month}/${_currentDateTime!.year} '
+                            'at ${_currentDateTime!.hour}:${_currentDateTime!.minute.toString().padLeft(2, '0')}:${_currentDateTime!.second.toString().padLeft(2, '0')}';
 
-                      // Show current date and time
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Current Date & Time: $formattedDateTime',
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: AutoSizeText(
+                              'Current Date & Time: $formattedDateTime',
+                            ),
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 3),
                           ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 50),
