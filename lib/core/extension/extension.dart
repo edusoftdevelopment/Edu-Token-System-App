@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -7,3 +9,4 @@ part 'context_extensions.dart';
 part 'icon_ext.dart';
 part 'list_ext.dart';
 part 'padding.dart';
+part 'gradient_blur_app_bar_extension.dart';

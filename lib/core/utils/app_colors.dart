@@ -71,16 +71,8 @@ class AppColors {
   static Color kDarkerGrey900 = Colors.grey.shade900;
   static Color kDarkerGrey700 = Colors.grey.shade700;
   static Color kDarkerGrey600 = Colors.grey.shade600;
-  static Color kFlourDustGray = const Color.fromARGB(255, 232, 232, 232);
-  static const Color kCustomTextColorForDark = Color(0xFFF5F5F5);
-  static const Color kCustomLightTextColor = Color(0xff8E8E8E);
-  static const Color kCustomLight2TextColor = Color(0xff6E6E6E);
   static const Color kCustomBorderColor = Color(0xffE2E2E2);
-  static const Color kCustomGrayButtonColor = Color(0xffD5DBDE);
-  static const Color scaffoldBackgroundColor = Color(0xffF6F6F6);
-  static const Color kCustomIconColor = Color(0xff6B7280);
-  static const Color kCustomGreyCharityPageColor = Color(0xff66707A);
-
+  static const Color kBlueGrayDark = Color(0xFF2c5364);
   //! Gradient Colors
   static const Color kRedOrangeGradient = Color(0xFFFF6B35);
   static const Color kBrownYellowGradient = Color(0xFFD4A574);
@@ -92,9 +84,6 @@ class AppColors {
   static const Color kBlueThemeSecondary = Color(0xFF3B82F6); // Blue-500
   static const Color kBlueThemeBackground = Color(0xFFF8FAFC); // Slate-50
   static const Color kBlueThemeText = Color(0xFF1E293B); // Slate-800
-  static const Color kBlueThemeTextSecondary = Color(0xFF64748B); // Slate-500
-  static const Color kBlueThemeAccent = Color(0xFF60A5FA); // Blue-400
-  static const Color kBlueThemeLight = Color(0xFFDBEAFE); // Blue-100
 
   static const Color kCustomCautionBoxTextButtonColor = Color(0xff6941C6);
 

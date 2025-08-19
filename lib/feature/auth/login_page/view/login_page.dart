@@ -1,7 +1,14 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/common/custom_button.dart';
+import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,198 +22,208 @@ class _LoginPageState extends State<LoginPage> {
   late TextEditingController _passwordController;
   String authenticationPass = 'true';
   bool firstTimeClick = true;
+  String? _serialNo;
+  Future<String?> getSerialNo() async {
+    try {
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting device ID: $e');
+      return null;
+    }
+  }
+
+  Future<void> _fetchSerialNumber() async {
+    final serial = await getSerialNo(); // 👈 wait karo Future ka
+    if (serial != null) {
+      setState(() {
+        _serialNo = serial;
+        AppConfig.mobileSerialNumber = _serialNo!;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSerialNumber();
+    });
   }
 
   @override
   void dispose() {
-    super.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final height = constraints.maxHeight;
-        // final width = constraints.maxWidth;
-        return Scaffold(
-          resizeToAvoidBottomInset: false,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: height * 0.02),
+    return Scaffold(
+      backgroundColor: AppColors.kWhite,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final height = constraints.maxHeight;
+            final width = constraints.maxWidth;
 
-                  SizedBox(height: height * 0.04),
-                  AutoSizeText(
-                    'Edu Token System',
+            return Column(
+              children: [
+                SizedBox(height: height * 0.05),
+
+                Container(),
+
+                ///! App Title
+                AutoSizeText(
+                  'Edu Token System',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    foreground: Paint()
+                      ..shader = const LinearGradient(
+                        colors: [
+                          Color(0xFF0f2027), // Dark Navy
+                          Color(0xFF203a43), // Deep Blue
+                          Color(0xFF2c5364), // Blue-Gray
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                  ),
+                ),
+
+                SizedBox(height: height * 0.04),
+
+                ///! Welcome AutoSizeText
+                AutoSizeText(
+                  ' Welcome Back 👋',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    foreground: Paint()
+                      ..shader = const LinearGradient(
+                        colors: [
+                          Color(0xFF0f2027), // Dark Navy
+                          Color(0xFF203a43), // Deep Blue
+                          Color(0xFF2c5364), // Blue-Gray
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+                AutoSizeText(
+                  'Login to continue',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                ),
+
+                SizedBox(height: height * 0.06),
+
+                ///! Email Field
+                CustomTextFormTokenSystem(
+                  sameBorder: authenticationPass == 'false',
+                  borderColor: (authenticationPass == 'false')
+                      ? AppColors.kDarkRed
+                      : null,
+                  darkMode: darkMode,
+                  textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: 16,
+                    color: AppColors.kCustomBlueColor,
+                  ),
+                  hintText: 'Email',
+                  controller: _emailController,
+                  onChanged: (_) => setState(() {}),
+                ),
+
+                SizedBox(height: height * 0.02),
+
+                ///! Password Field
+                CustomTextFormTokenSystem(
+                  sameBorder: authenticationPass == 'false',
+                  borderColor: (authenticationPass == 'false')
+                      ? AppColors.kDarkRed
+                      : null,
+                  darkMode: darkMode,
+                  textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: 16,
+                    color: AppColors.kCustomBlueColor,
+                  ),
+                  isPassword: true,
+                  hintText: 'Password',
+                  controller: _passwordController,
+                  onChanged: (_) => setState(() {}),
+                ),
+
+                if (authenticationPass == 'false') ...[
+                  const SizedBox(height: 10),
+                  const AutoSizeText(
+                    'Incorrect Email & Password ❌',
+                    style: TextStyle(fontSize: 14, color: AppColors.kDarkRed),
+                  ),
+                ],
+
+                SizedBox(height: height * 0.05),
+
+                ///! Login Button
+                CustomButton(
+                  // backgroundColor:
+                  //     (_emailController.text.isNotEmpty &&
+                  //         _passwordController.text.isNotEmpty)
+                  //     ? AppColors.kCustomButtonsColor
+                  // //     : AppColors.kCustomGrayButtonColor,
+                  // textColor:
+                  //     (_emailController.text.isNotEmpty &&
+                  //         _passwordController.text.isNotEmpty)
+                  //     ? Colors.white
+                  //     : AppColors.kCustomBlueColor,
+                  name: 'Login In',
+                  onPressed: () {
+                    if (kDebugMode) {
+                      print(
+                        'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
+                      );
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<dynamic>(
+                        builder: (_) => const NewTokenMain(),
+                      ),
+                    );
+                  },
+                ),
+
+                const Spacer(),
+
+                ///! Bottom Section with Emojis
+                Center(
+                  child: AutoSizeText(
+                    '🔐 Secure Login | 🚀 Fast Access',
                     style: Theme.of(
                       context,
-                    ).textTheme.displayMedium?.copyWith(fontSize: 24),
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
-                  SizedBox(height: height * 0.01),
+                ),
 
-                  SizedBox(height: height * 0.04),
-                  CustomTextFormTokenSystem(
-                    sameBorder: (authenticationPass == 'false') ? true : false,
-
-                    borderColor: (authenticationPass == 'false')
-                        ? AppColors.kDarkRed
-                        : null,
-                    darkMode: darkMode,
-                    textStyle: Theme.of(context).textTheme.displaySmall
-                        ?.copyWith(
-                          fontSize: 18,
-                          color: darkMode
-                              ? AppColors.kWhite
-                              : AppColors.kCustomBlueColor,
-                        ),
-                    hintText: 'Email',
-                    controller: _emailController,
-                    onChanged: (p0) {
-                      setState(() {});
-                    },
-                  ),
-                  SizedBox(height: height * 0.02),
-                  CustomTextFormTokenSystem(
-                    sameBorder: (authenticationPass == 'false') ? true : false,
-
-                    borderColor: (authenticationPass == 'false')
-                        ? AppColors.kDarkRed
-                        : null,
-                    darkMode: darkMode,
-                    textStyle: Theme.of(context).textTheme.displaySmall
-                        ?.copyWith(
-                          fontSize: 18,
-                          color: darkMode
-                              ? AppColors.kWhite
-                              : AppColors.kCustomBlueColor,
-                        ),
-                    isPassword: true,
-                    hintText: 'Password',
-                    controller: _passwordController,
-                    onChanged: (p0) {
-                      setState(() {});
-                    },
-                  ),
-                  if (authenticationPass == 'false')
-                    SizedBox(height: height * 0.015),
-                  if (authenticationPass == 'false')
-                    AutoSizeText(
-                      'Incorrect Email & Password',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.kDarkRed,
-                      ),
-                    ),
-                  SizedBox(
-                    height: (authenticationPass == 'false')
-                        ? height * 0.015
-                        : height * 0.039,
-                  ),
-                  //   CustomNewTextButton(
-                  //     onTap: () async {
-                  //       return NavigationMethod.navigateTo(
-                  //         RoutesName.forgotPasswordScreen,
-                  //       );
-                  //     },
-                  //     text: 'Forgot Password?',
-                  //   ),
-                  SizedBox(height: height * 0.039),
-                  CustomButton(
-                    backgroundColor: (darkMode)
-                        ? AppColors.kCustomButtonsColor
-                        : ((_emailController.text) != '')
-                        ? AppColors.kCustomButtonsColor
-                        : AppColors.kCustomGrayButtonColor,
-                    textColor: (darkMode)
-                        ? AppColors.kWhite
-                        : (_emailController.text != '')
-                        ? AppColors.kWhite
-                        : AppColors.kCustomBlueColor,
-                    name: 'Sign In',
-                    onPressed: () {
-                      //   if (_passwordController.text != '') {
-                      //     if (_emailController.text != '') {
-                      //       setState(() {
-                      //         if (firstTimeClick == true) {
-                      //           authenticationPass = 'false';
-                      //           firstTimeClick = false;
-                      //         } else {
-                      //           authenticationPass = 'true';
-                      //         }
-                      //       });
-                      //       if (authenticationPass == 'true') {
-
-                      //       }
-                      //     }
-                      //   }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return NewTokenMain();
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                  SizedBox(height: height * 0.04),
-
-                  SizedBox(height: height * 0.04),
-
-                  SizedBox(
-                    height: (authenticationPass == 'false')
-                        ? height * 0.05
-                        : height * 0.10,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      //   AutoSizeText(
-                      //     'Don’t have an account?',
-                      //     style: Theme.of(context).textTheme.displayMedium
-                      //         ?.copyWith(
-                      //           fontSize: 16,
-                      //           fontWeight: FontWeight.w400,
-
-                      //           color: darkMode
-                      //               ? AppColors.kWhite
-                      //               : AppColors.kCustomLight2TextColor,
-                      //         ),
-                      //   ),
-                      //   SizedBox(width: width * 0.01),
-                      //   CustomNewTextButton(
-                      //     onTap: () async {
-                      //       return NavigationMethod.navigateTo(
-                      //         RoutesName.signUpScreen,
-                      //       );
-                      //     },
-                      //     text: 'Sign Up',
-                      //     textColor: AppColors.kCustomStatusGreenTextColor,
-                      //   ),
-                    ],
-                  ),
-                  // SizedBox(
-                  //   height: height * 0.04,
-                  // ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+                SizedBox(height: height * 0.03),
+              ],
+            ).paddingHorizontal(width * 0.05).paddingVertical(height * 0.05);
+          },
+        ),
+      ),
     );
   }
 }
