@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -9,7 +8,7 @@ import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -195,8 +194,8 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     if (kDebugMode) {
                       print(
-                      'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
-                    );
+                        'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
+                      );
                     }
                     Navigator.push(
                       context,
