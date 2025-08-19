@@ -1,8 +1,7 @@
-import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:flutter/material.dart';
+part of 'common.dart';
 
-class CustomTextFormFieldPizza extends StatefulWidget {
-  const CustomTextFormFieldPizza({
+class CustomTextFormTokenSystem extends StatefulWidget {
+  const CustomTextFormTokenSystem({
     required this.hintText,
     required this.controller,
     required this.darkMode,
@@ -22,6 +21,7 @@ class CustomTextFormFieldPizza extends StatefulWidget {
     this.suffixIcon,
     this.borderRadius,
     this.onTap,
+    this.keyboardType,
   }) : assert(
          sameBorder == false || borderColor != null,
          'borderColor is required when sameBorder is true',
@@ -44,13 +44,14 @@ class CustomTextFormFieldPizza extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
   final Widget? suffixIcon;
   final void Function()? onTap;
+  final TextInputType? keyboardType;
 
   @override
-  State<CustomTextFormFieldPizza> createState() =>
-      _CustomTextFormFieldPizzaState();
+  State<CustomTextFormTokenSystem> createState() =>
+      _CustomTextFormTokenSystemState();
 }
 
-class _CustomTextFormFieldPizzaState extends State<CustomTextFormFieldPizza> {
+class _CustomTextFormTokenSystemState extends State<CustomTextFormTokenSystem> {
   bool obscureText = true;
 
   @override
@@ -63,6 +64,7 @@ class _CustomTextFormFieldPizzaState extends State<CustomTextFormFieldPizza> {
         textAlign: TextAlign.left,
         onTap: widget.onTap ?? () {},
         validator: widget.validator,
+        keyboardType: widget.keyboardType ?? TextInputType.text,
         cursorColor: widget.darkMode ? AppColors.kWhite : AppColors.kBlack,
         onTapOutside: (event) {
           FocusScope.of(context).unfocus();
@@ -73,9 +75,7 @@ class _CustomTextFormFieldPizzaState extends State<CustomTextFormFieldPizza> {
         obscureText: widget.isPassword ? obscureText : false,
         style:
             widget.textStyle ??
-            Theme.of(context).textTheme.displaySmall?.copyWith(
-              
-            ),
+            Theme.of(context).textTheme.displaySmall?.copyWith(fontSize: 18),
         expands: widget.height != null,
         maxLines: widget.height != null ? null : 1,
         minLines: widget.height != null ? null : 1,

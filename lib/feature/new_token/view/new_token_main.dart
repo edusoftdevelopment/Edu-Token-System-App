@@ -1,6 +1,8 @@
+import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/app/app.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_button.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_text_form_field.dart';
+import 'package:edu_token_system_app/core/extension/extension.dart';
+import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:flutter/material.dart';
 
 class NewTokenMain extends StatefulWidget {
@@ -14,7 +16,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
-
+  DateTime? _currentDateTime;
   // Control width from yahan
   double dropdownWidth = 350;
 
@@ -22,6 +24,10 @@ class _NewTokenMainState extends State<NewTokenMain> {
   void initState() {
     super.initState();
     _numberController = TextEditingController();
+  }
+
+  Stream<DateTime> _timeStream() {
+    return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
   }
 
   @override
@@ -33,136 +39,188 @@ class _NewTokenMainState extends State<NewTokenMain> {
   @override
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
-    // agar responsive width chahte ho to uncomment:
-    // dropdownWidth = MediaQuery.of(context).size.width * 0.9;
+    final size = MediaQuery.of(context).size;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Scaffold(
-          // appBar: CustomAppBarEduTokenSystem(
-          //   title: 'Add Token',
-          //   size: ,
-          // ),
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    'Choose vehicle',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final height = constraints.maxHeight;
+            // final width = constraints.maxWidth;
+            return Scaffold(
+              appBar: CustomAppBarEduTokenSystem(
+                backgroundColor: AppColors.kAppBarColor,
+                title: 'New Token',
+                titleStyle: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontSize: 24,
+                  color: AppColors.kWhite,
+                  fontWeight: FontWeight.bold,
                 ),
-
-                // PopupMenuButton with same styling as dropdown
-                Container(
-                  width: dropdownWidth,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade400, width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 6,
-                        offset: Offset(0, 3),
+                size: size,
+              ),
+              body: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(height: height * 0.02),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      'Choose vehicle',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
+                    ),
                   ),
-                  child: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      setState(() {
-                        selectedVehicle = value;
-                      });
-                    },
-                    itemBuilder: (context) => vehicles.map((String vehicle) {
-                      return PopupMenuItem<String>(
-                        value: vehicle,
-                        child: Container(
-                          width: dropdownWidth - 40, // Adjust for padding
-                          padding: const EdgeInsets.symmetric(vertical: 6.0),
-                          child: Text(
-                            vehicle,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
+
+                  // PopupMenuButton with same styling as dropdown
+                  Container(
+                    width: dropdownWidth,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.shade400,
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        setState(() {
+                          selectedVehicle = value;
+                        });
+                      },
+                      itemBuilder: (context) => vehicles.map((String vehicle) {
+                        return PopupMenuItem<String>(
+                          value: vehicle,
+                          child: Container(
+                            width: dropdownWidth - 40, // Adjust for padding
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: AutoSizeText(
+                              vehicle,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
+                        );
+                      }).toList(),
+                      offset: const Offset(
+                        0,
+                        50,
+                      ), // Menu button ke neeche open hoga
+                      elevation: 8,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.grey.shade400,
+                          width: 1.2,
                         ),
-                      );
-                    }).toList(),
-                    offset: const Offset(
-                      0,
-                      50,
-                    ), // Menu button ke neeche open hoga
-                    elevation: 8,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade400, width: 1.2),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 16,
                       ),
-                      child: Row(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            AutoSizeText(
+                              selectedVehicle ?? 'Select Vehicle',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: selectedVehicle == null
+                                    ? Colors.grey.shade600
+                                    : Colors.black87,
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down, size: 26),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextFormTokenSystem(
+                    hintText: 'Vehicle Number',
+                    controller: _numberController,
+                    darkMode: darkMode,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  AutoSizeText(
+                    selectedVehicle == null
+                        ? 'No vehicle selected'
+                        : 'Selected: $selectedVehicle',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  StreamBuilder<DateTime>(
+                    stream: _timeStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const AutoSizeText("Loading...");
+                      }
+                      final now = snapshot.data!;
+                      _currentDateTime = now;
+                      final date = "${now.day}-${now.month}-${now.year}";
+                      final time =
+                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            selectedVehicle ?? 'Select Vehicle',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: selectedVehicle == null
-                                  ? Colors.grey.shade600
-                                  : Colors.black87,
+                          AutoSizeText(
+                            "Date: $date",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Icon(Icons.keyboard_arrow_down, size: 26),
+                          AutoSizeText(
+                            "Time: $time",
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ],
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-                CustomTextFormFieldPizza(
-                  hintText: 'Enter Number',
-                  controller: _numberController,
-                  darkMode: darkMode,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  selectedVehicle == null
-                      ? 'No vehicle selected'
-                      : 'Selected: $selectedVehicle',
-                  style: const TextStyle(fontSize: 15),
-                ),
+                  Spacer(),
+                  CustomButton(
+                    name: 'Save',
+                    onPressed: () {
+                      if (_currentDateTime != null) {
+                        String formattedDateTime =
+                            '${_currentDateTime!.day}/${_currentDateTime!.month}/${_currentDateTime!.year} '
+                            'at ${_currentDateTime!.hour}:${_currentDateTime!.minute.toString().padLeft(2, '0')}:${_currentDateTime!.second.toString().padLeft(2, '0')}';
 
-                const SizedBox(height: 20),
-                CustomButton(
-                  name: 'Save',
-                  onPressed: () {
-                    // Current date and time
-                    DateTime now = DateTime.now();
-                    String formattedDateTime =
-                        '${now.day}/${now.month}/${now.year} at ${now.hour}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-
-                    // Show current date and time
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Current Date & Time: $formattedDateTime',
-                        ),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: AutoSizeText(
+                              'Current Date & Time: $formattedDateTime',
+                            ),
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 50),
+                ],
+              ).paddingHorizontal(20),
+            );
+          },
         );
       },
     );
