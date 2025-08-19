@@ -1,4 +1,5 @@
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/view/login_page.dart';
 
 class EduTokenSystem extends StatelessWidget {
   const EduTokenSystem({super.key});
@@ -12,11 +13,8 @@ class EduTokenSystem extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  Container(
-        height: double.infinity,
-        width: double.infinity,
-        color: Colors.red,
-      ),
+
+      home: const LoginPage(),
     );
   }
 }
