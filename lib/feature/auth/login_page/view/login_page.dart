@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
@@ -21,15 +22,13 @@ class _LoginPageState extends State<LoginPage> {
   late TextEditingController _passwordController;
   String authenticationPass = 'true';
   bool firstTimeClick = true;
-
+  String? _serialNo;
   Future<String?> getSerialNo() async {
     try {
       final isAllowed = await PermissionService.checkPhonePermission();
 
       if (isAllowed) {
-        const platform = MethodChannel(
-          'com.example.salman_food_app/device_info',
-        );
+        const platform = MethodChannel('com.example.edu_token_system_app');
         try {
           final serial =
               await platform.invokeMethod('getSerialNumber') as String;
@@ -46,11 +45,24 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _fetchSerialNumber() async {
+    final serial = await getSerialNo(); // 👈 wait karo Future ka
+    if (serial != null) {
+      setState(() {
+        _serialNo = serial;
+        AppConfig.mobileSerialNumber = _serialNo!;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSerialNumber();
+    });
   }
 
   @override
@@ -185,6 +197,9 @@ class _LoginPageState extends State<LoginPage> {
                   //     : AppColors.kCustomBlueColor,
                   name: "Login In",
                   onPressed: () {
+                    print(
+                      'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const NewTokenMain()),
