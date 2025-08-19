@@ -52,7 +52,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
             return Scaffold(
               backgroundColor: Colors.white,
               appBar: CustomAppBarEduTokenSystem(
-                backgroundColor: AppColors.kAppBarColor,
+                // backgroundColor: AppColors.kAppBarColor,
                 title: 'New Token',
                 titleStyle: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontSize: 24,
@@ -72,7 +72,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       if (!snapshot.hasData) {
                         return Center(
                           child: LoadingAnimationWidget.staggeredDotsWave(
-                            color: Color(0xFF2c5364),
+                            color: AppColors.kBlueGrayDark,
                             size: 50,
                           ),
                         );
@@ -127,7 +127,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black12,
+                          color: AppColors.kBlack12,
                           blurRadius: 6,
                           offset: Offset(0, 3),
                         ),

@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:developer';
 
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
@@ -7,7 +7,6 @@ import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
 import 'package:edu_token_system_app/service/permission_service.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
@@ -42,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
       }
       return null;
     } on PlatformException catch (e) {
-      // log("Failed to get device serial number: '${e.message}'.");
+      log("Failed to get device serial number: '${e.message}'.");
       return null;
     }
   }

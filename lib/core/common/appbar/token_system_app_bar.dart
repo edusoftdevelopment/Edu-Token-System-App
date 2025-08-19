@@ -61,7 +61,6 @@ class CustomAppBarEduTokenSystem extends StatelessWidget
           const TextStyle(overflow: TextOverflow.ellipsis),
       centerTitle: centerTitle,
       actions: actions,
-      // backgroundColor ko null rakhenge takay gradient kaam kare
       backgroundColor: Colors.transparent,
       elevation: elevation ?? appBarTheme.elevation ?? 0.0,
       scrolledUnderElevation:
@@ -73,26 +72,7 @@ class CustomAppBarEduTokenSystem extends StatelessWidget
       systemOverlayStyle: systemOverlayStyle ?? appBarTheme.systemOverlayStyle,
       shadowColor: shadowColor ?? appBarTheme.shadowColor,
       foregroundColor: AppColors.kWhite,
-
-      // 🔹 Gradient yahan flexibleSpace me apply hoga
-      flexibleSpace: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8), // 🔹 Blur intensity
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0f2027), // Dark Navy
-                  Color(0xFF203a43), // Deep Blue
-                  Color(0xFF2c5364), // Blue-Gray
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-        ),
-      ),
+      flexibleSpace: const SizedBox.expand().withGradientBlur(),
     );
   }
 
