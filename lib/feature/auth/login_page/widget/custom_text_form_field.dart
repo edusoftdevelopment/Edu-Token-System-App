@@ -73,7 +73,9 @@ class _CustomTextFormFieldPizzaState extends State<CustomTextFormFieldPizza> {
         obscureText: widget.isPassword ? obscureText : false,
         style:
             widget.textStyle ??
-            Theme.of(context).textTheme.displaySmall?.copyWith(),
+            Theme.of(context).textTheme.displaySmall?.copyWith(
+              
+            ),
         expands: widget.height != null,
         maxLines: widget.height != null ? null : 1,
         minLines: widget.height != null ? null : 1,

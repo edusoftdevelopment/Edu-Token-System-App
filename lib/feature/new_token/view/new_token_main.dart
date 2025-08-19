@@ -1,6 +1,6 @@
 import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_button.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_text_form_field.dart';
 import 'package:flutter/material.dart';
-
 
 class NewTokenMain extends StatefulWidget {
   const NewTokenMain({super.key});
@@ -12,12 +12,26 @@ class NewTokenMain extends StatefulWidget {
 class _NewTokenMainState extends State<NewTokenMain> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
+  late TextEditingController _numberController;
 
   // Control width from yahan
   double dropdownWidth = 350;
 
   @override
+  void initState() {
+    super.initState();
+    _numberController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _numberController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final darkMode = Theme.of(context).brightness == Brightness.dark;
     // agar responsive width chahte ho to uncomment:
     // dropdownWidth = MediaQuery.of(context).size.width * 0.9;
 
@@ -102,7 +116,12 @@ class _NewTokenMainState extends State<NewTokenMain> {
                 ),
               ),
             ),
-
+            const SizedBox(height: 16),
+            CustomTextFormFieldPizza(
+              hintText: 'Enter Number',
+              controller: _numberController,
+              darkMode: darkMode,
+            ),
             const SizedBox(height: 16),
             Text(
               selectedVehicle == null
