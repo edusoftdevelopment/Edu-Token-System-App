@@ -2,6 +2,7 @@ import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_button.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_text_form_field.dart';
+import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,20 +36,13 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: height * 0.04),
                   AutoSizeText(
-                    'Hi There! 👋',
-                    style: Theme.of(context).textTheme.displayMedium,
+                    'Edusoft Token System',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displayMedium?.copyWith(fontSize: 24),
                   ),
                   SizedBox(height: height * 0.01),
-                  AutoSizeText(
-                    'Welcome back, Sign in to your account',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: darkMode
-                          ? AppColors.kWhite
-                          : AppColors.kCustomLight2TextColor,
-                    ),
-                  ),
+
                   SizedBox(height: height * 0.04),
                   CustomTextFormFieldPizza(
                     sameBorder: (authenticationPass == 'false') ? true : false,
@@ -59,6 +53,7 @@ class _LoginPageState extends State<LoginPage> {
                     darkMode: darkMode,
                     textStyle: Theme.of(context).textTheme.displaySmall
                         ?.copyWith(
+                          fontSize: 18,
                           color: darkMode
                               ? AppColors.kWhite
                               : AppColors.kCustomBlueColor,
@@ -79,6 +74,7 @@ class _LoginPageState extends State<LoginPage> {
                     darkMode: darkMode,
                     textStyle: Theme.of(context).textTheme.displaySmall
                         ?.copyWith(
+                          fontSize: 18,
                           color: darkMode
                               ? AppColors.kWhite
                               : AppColors.kCustomBlueColor,
@@ -128,19 +124,29 @@ class _LoginPageState extends State<LoginPage> {
                         : AppColors.kCustomBlueColor,
                     name: 'Sign In',
                     onPressed: () {
-                      if (_passwordController.text != '') {
-                        if (_emailController.text != '') {
-                          setState(() {
-                            if (firstTimeClick == true) {
-                              authenticationPass = 'false';
-                              firstTimeClick = false;
-                            } else {
-                              authenticationPass = 'true';
-                            }
-                          });
-                          if (authenticationPass == 'true') {}
-                        }
-                      }
+                      //   if (_passwordController.text != '') {
+                      //     if (_emailController.text != '') {
+                      //       setState(() {
+                      //         if (firstTimeClick == true) {
+                      //           authenticationPass = 'false';
+                      //           firstTimeClick = false;
+                      //         } else {
+                      //           authenticationPass = 'true';
+                      //         }
+                      //       });
+                      //       if (authenticationPass == 'true') {
+
+                      //       }
+                      //     }
+                      //   }
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return NewTokenMain();
+                          },
+                        ),
+                      );
                     },
                   ),
                   SizedBox(height: height * 0.04),
@@ -155,19 +161,19 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      AutoSizeText(
-                        'Don’t have an account?',
-                        style: Theme.of(context).textTheme.displayMedium
-                            ?.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
+                      //   AutoSizeText(
+                      //     'Don’t have an account?',
+                      //     style: Theme.of(context).textTheme.displayMedium
+                      //         ?.copyWith(
+                      //           fontSize: 16,
+                      //           fontWeight: FontWeight.w400,
 
-                              color: darkMode
-                                  ? AppColors.kWhite
-                                  : AppColors.kCustomLight2TextColor,
-                            ),
-                      ),
-                      SizedBox(width: width * 0.01),
+                      //           color: darkMode
+                      //               ? AppColors.kWhite
+                      //               : AppColors.kCustomLight2TextColor,
+                      //         ),
+                      //   ),
+                      //   SizedBox(width: width * 0.01),
                       //   CustomNewTextButton(
                       //     onTap: () async {
                       //       return NavigationMethod.navigateTo(
