@@ -2,6 +2,7 @@ import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class NewTokenMain extends StatefulWidget {
   const NewTokenMain({super.key});
@@ -60,6 +61,42 @@ class _NewTokenMainState extends State<NewTokenMain> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  StreamBuilder<DateTime>(
+                    stream: _timeStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Center(
+                          child: LoadingAnimationWidget.staggeredDotsWave(
+                            color: Colors.blue,
+                            size: 50,
+                          ),
+                        );
+                      }
+                      final now = snapshot.data!;
+                      _currentDateTime = now;
+                      final date = "${now.day}-${now.month}-${now.year}";
+                      final time =
+                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+                      return Row(
+                        // mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          AutoSizeText(
+                            "Date: $date",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          AutoSizeText(
+                            "Time: $time",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                   SizedBox(height: height * 0.02),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -155,48 +192,9 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     darkMode: darkMode,
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: height * 0.02),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: AutoSizeText(
-                      selectedVehicle == null
-                          ? 'No vehicle selected'
-                          : 'Selected: $selectedVehicle',
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ),
-                  SizedBox(height: height * 0.02),
-                  StreamBuilder<DateTime>(
-                    stream: _timeStream(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const AutoSizeText("Loading...");
-                      }
-                      final now = snapshot.data!;
-                      _currentDateTime = now;
-                      final date = "${now.day}-${now.month}-${now.year}";
-                      final time =
-                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
-                      return Row(
-                        // mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          AutoSizeText(
-                            "Date: $date",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          AutoSizeText(
-                            "Time: $time",
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  SizedBox(height: height * 0.02),
+
                   Spacer(),
                   CustomButton(
                     name: 'Save',
