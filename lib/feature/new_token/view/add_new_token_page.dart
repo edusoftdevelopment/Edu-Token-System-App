@@ -5,14 +5,14 @@ import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-class NewTokenMain extends StatefulWidget {
-  const NewTokenMain({super.key});
+class AddNewTokenPage extends StatefulWidget {
+  const AddNewTokenPage({super.key});
 
   @override
-  State<NewTokenMain> createState() => _NewTokenMainState();
+  State<AddNewTokenPage> createState() => _AddNewTokenPageState();
 }
 
-class _NewTokenMainState extends State<NewTokenMain> {
+class _AddNewTokenPageState extends State<AddNewTokenPage> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
@@ -218,7 +218,8 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     hintText: 'Vehicle Number',
                     controller: _numberController,
                     darkMode: darkMode,
-                    keyboardType: TextInputType.number,
+
+                    textCapitalization: TextCapitalization.characters,
                   ),
 
                   SizedBox(height: height * 0.02),
@@ -226,23 +227,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                   const Spacer(),
                   CustomButton(
                     name: 'Save',
-                    onPressed: () {
-                      if (_currentDateTime != null) {
-                        final formattedDateTime =
-                            '${_currentDateTime!.day}/${_currentDateTime!.month}/${_currentDateTime!.year} '
-                            'at ${_currentDateTime!.hour}:${_currentDateTime!.minute.toString().padLeft(2, '0')}:${_currentDateTime!.second.toString().padLeft(2, '0')}';
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: AutoSizeText(
-                              'Current Date & Time: $formattedDateTime',
-                            ),
-                            backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: () {},
                   ),
                   const SizedBox(height: 50),
                 ],

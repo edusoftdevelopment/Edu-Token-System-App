@@ -7,7 +7,7 @@ import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
+import 'package:edu_token_system_app/feature/new_token/view/add_new_token_page.dart';
 import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 Container(),
 
-                ///! App Title
+                //! App Title
                 AutoSizeText(
                   'Edu Token System',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -105,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 SizedBox(height: height * 0.04),
 
-                ///! Welcome AutoSizeText
+                //! Welcome AutoSizeText
                 AutoSizeText(
                   ' Welcome Back 👋',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -200,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute<dynamic>(
-                        builder: (_) => const NewTokenMain(),
+                        builder: (_) => const AddNewTokenPage(),
                       ),
                     );
                   },
@@ -211,7 +211,7 @@ class _LoginPageState extends State<LoginPage> {
                 ///! Bottom Section with Emojis
                 Center(
                   child: AutoSizeText(
-                    '🔐 Secure Login | 🚀 Fast Access',
+                    '@Edusoft System Solutions',
                     style: Theme.of(
                       context,
                     ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
