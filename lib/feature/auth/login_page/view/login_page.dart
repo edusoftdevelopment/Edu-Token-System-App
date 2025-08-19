@@ -1,10 +1,14 @@
+import 'dart:math';
+
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
+import 'package:edu_token_system_app/service/permission_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,6 +22,30 @@ class _LoginPageState extends State<LoginPage> {
   late TextEditingController _passwordController;
   String authenticationPass = 'true';
   bool firstTimeClick = true;
+
+  Future<String?> getSerialNo() async {
+    try {
+      final isAllowed = await PermissionService.checkPhonePermission();
+
+      if (isAllowed) {
+        const platform = MethodChannel(
+          'com.example.salman_food_app/device_info',
+        );
+        try {
+          final serial =
+              await platform.invokeMethod('getSerialNumber') as String;
+
+          return serial;
+        } on PlatformException catch (e) {
+          return "Failed to get serial number: '${e.message}'";
+        }
+      }
+      return null;
+    } on PlatformException catch (e) {
+      // log("Failed to get device serial number: '${e.message}'.");
+      return null;
+    }
+  }
 
   @override
   void initState() {
