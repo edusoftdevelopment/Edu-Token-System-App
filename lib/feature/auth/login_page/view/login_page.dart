@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -7,9 +6,10 @@ import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
+import 'package:edu_token_system_app/core/network/network.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,17 +26,17 @@ class _LoginPageState extends State<LoginPage> {
   String? _serialNo;
   Future<String?> getSerialNo() async {
     try {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final deviceInfo = DeviceInfoPlugin();
 
       if (Platform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        final androidInfo = await deviceInfo.androidInfo;
         return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
       } else if (Platform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        final iosInfo = await deviceInfo.iosInfo;
         return iosInfo.identifierForVendor;
       }
       return null;
-    } catch (e) {
+    } on Failure catch (e) {
       print('Error getting device ID: $e');
       return null;
     }
@@ -195,8 +195,8 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     if (kDebugMode) {
                       print(
-                      'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
-                    );
+                        'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
+                      );
                     }
                     Navigator.push(
                       context,
