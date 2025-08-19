@@ -1,7 +1,9 @@
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class NewTokenMain extends StatefulWidget {
   const NewTokenMain({super.key});
@@ -16,7 +18,6 @@ class _NewTokenMainState extends State<NewTokenMain> {
   late TextEditingController _numberController;
   DateTime? _currentDateTime;
   // Control width from yahan
-  double dropdownWidth = 350;
 
   @override
   void initState() {
@@ -41,11 +42,15 @@ class _NewTokenMainState extends State<NewTokenMain> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final screenHeight = constraints.maxHeight;
+        final screenWidth = constraints.maxWidth;
+        double dropdownWidth = screenWidth;
         return LayoutBuilder(
           builder: (context, constraints) {
             final height = constraints.maxHeight;
             // final width = constraints.maxWidth;
             return Scaffold(
+              backgroundColor: Colors.white,
               appBar: CustomAppBarEduTokenSystem(
                 backgroundColor: AppColors.kAppBarColor,
                 title: 'New Token',
@@ -60,11 +65,48 @@ class _NewTokenMainState extends State<NewTokenMain> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  SizedBox(height: height * 0.02),
+                  SizedBox(height: screenHeight * 0.03),
+                  StreamBuilder<DateTime>(
+                    stream: _timeStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Center(
+                          child: LoadingAnimationWidget.staggeredDotsWave(
+                            color: Color(0xFF2c5364),
+                            size: 50,
+                          ),
+                        );
+                      }
+                      final now = snapshot.data!;
+                      _currentDateTime = now;
+                      final date = "${now.day}-${now.month}-${now.year}";
+                      final time =
+                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+                      return Row(
+                        // mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          AutoSizeText(
+                            "Date: $date",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          AutoSizeText(
+                            "Time: $time",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  SizedBox(height: height * 0.03),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: AutoSizeText(
-                      'Choose vehicle',
+                      'Choose Vehicle',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -72,6 +114,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     ),
                   ),
 
+                  SizedBox(height: height * 0.01),
                   // PopupMenuButton with same styling as dropdown
                   Container(
                     width: dropdownWidth,
@@ -91,6 +134,11 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       ],
                     ),
                     child: PopupMenuButton<String>(
+                      constraints: BoxConstraints(
+                        minWidth:
+                            dropdownWidth, // 👈 dropdown button jitni width
+                        maxWidth: dropdownWidth, // 👈 force same width
+                      ),
                       onSelected: (value) {
                         setState(() {
                           selectedVehicle = value;
@@ -99,19 +147,26 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       itemBuilder: (context) => vehicles.map((String vehicle) {
                         return PopupMenuItem<String>(
                           value: vehicle,
-                          child: Container(
-                            width: dropdownWidth - 40, // Adjust for padding
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: AutoSizeText(
-                              vehicle,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
+                          padding: EdgeInsets.zero, // 🔹 default padding hatao
+                          child: SizedBox(
+                            width: dropdownWidth, // 🔹 poore button jitni width
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 12,
+                              ),
+                              child: AutoSizeText(
+                                vehicle,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ),
                         );
                       }).toList(),
+
                       offset: const Offset(
                         0,
                         50,
@@ -148,55 +203,27 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: height * 0.01),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      'Enter Vehicle Number',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
                   CustomTextFormTokenSystem(
                     hintText: 'Vehicle Number',
                     controller: _numberController,
                     darkMode: darkMode,
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: height * 0.02),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: AutoSizeText(
-                      selectedVehicle == null
-                          ? 'No vehicle selected'
-                          : 'Selected: $selectedVehicle',
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ),
-                  SizedBox(height: height * 0.02),
-                  StreamBuilder<DateTime>(
-                    stream: _timeStream(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const AutoSizeText("Loading...");
-                      }
-                      final now = snapshot.data!;
-                      _currentDateTime = now;
-                      final date = "${now.day}-${now.month}-${now.year}";
-                      final time =
-                          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
-                      return Row(
-                        // mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          AutoSizeText(
-                            "Date: $date",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          AutoSizeText(
-                            "Time: $time",
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  SizedBox(height: height * 0.02),
+
                   Spacer(),
                   CustomButton(
                     name: 'Save',
