@@ -12,7 +12,11 @@ class EduTokenSystem extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      // home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home:  Container(
+        height: double.infinity,
+        width: double.infinity,
+        color: Colors.red,
+      ),
     );
   }
 }
