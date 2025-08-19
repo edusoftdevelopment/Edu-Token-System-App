@@ -117,7 +117,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
               ),
             ),
             const SizedBox(height: 16),
-            CustomTextFormFieldPizza(
+            CustomTextFormTokenSystem(
               hintText: 'Enter Number',
               controller: _numberController,
               darkMode: darkMode,

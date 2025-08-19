@@ -11,12 +11,26 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-TextEditingController _emailController = TextEditingController();
-TextEditingController _passwordController = TextEditingController();
-String authenticationPass = 'true';
-bool firstTimeClick = true;
-
 class _LoginPageState extends State<LoginPage> {
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  String authenticationPass = 'true';
+  bool firstTimeClick = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
@@ -36,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   SizedBox(height: height * 0.04),
                   AutoSizeText(
-                    'Edusoft Token System',
+                    'Edu Token System',
                     style: Theme.of(
                       context,
                     ).textTheme.displayMedium?.copyWith(fontSize: 24),
@@ -44,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(height: height * 0.01),
 
                   SizedBox(height: height * 0.04),
-                  CustomTextFormFieldPizza(
+                  CustomTextFormTokenSystem(
                     sameBorder: (authenticationPass == 'false') ? true : false,
 
                     borderColor: (authenticationPass == 'false')
@@ -65,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   SizedBox(height: height * 0.02),
-                  CustomTextFormFieldPizza(
+                  CustomTextFormTokenSystem(
                     sameBorder: (authenticationPass == 'false') ? true : false,
 
                     borderColor: (authenticationPass == 'false')
