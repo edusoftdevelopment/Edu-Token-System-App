@@ -56,9 +56,18 @@ class _CustomTextFormTokenSystemState extends State<CustomTextFormTokenSystem> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: widget.width ?? double.infinity,
-      height: widget.height, // Height ko uncomment kiya gaya hai
+      height: widget.height, 
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.kGrey.withValues(alpha: 0.5),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: TextFormField(
         textAlignVertical: TextAlignVertical.top,
         textAlign: TextAlign.left,

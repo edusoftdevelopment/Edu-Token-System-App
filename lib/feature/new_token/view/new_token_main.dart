@@ -1,9 +1,7 @@
 import 'package:edu_token_system_app/Export/export.dart';
-import 'package:edu_token_system_app/app/app.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:flutter/material.dart';
 
 class NewTokenMain extends StatefulWidget {
   const NewTokenMain({super.key});
@@ -157,13 +155,17 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     darkMode: darkMode,
                     keyboardType: TextInputType.number,
                   ),
-                  const SizedBox(height: 16),
-                  AutoSizeText(
-                    selectedVehicle == null
-                        ? 'No vehicle selected'
-                        : 'Selected: $selectedVehicle',
-                    style: const TextStyle(fontSize: 15),
+                  SizedBox(height: height * 0.02),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      selectedVehicle == null
+                          ? 'No vehicle selected'
+                          : 'Selected: $selectedVehicle',
+                      style: const TextStyle(fontSize: 15),
+                    ),
                   ),
+                  SizedBox(height: height * 0.02),
                   StreamBuilder<DateTime>(
                     stream: _timeStream(),
                     builder: (context, snapshot) {
@@ -177,7 +179,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
                       return Row(
-                        mainAxisSize: MainAxisSize.min,
+                        // mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           AutoSizeText(
