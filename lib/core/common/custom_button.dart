@@ -1,6 +1,5 @@
-import 'package:edu_token_system_app/Export/export.dart';
-import 'package:edu_token_system_app/core/utils/utils.dart';
 
+part of 'common.dart';
 class CustomButton extends StatelessWidget {
   const CustomButton({
     required this.onPressed,

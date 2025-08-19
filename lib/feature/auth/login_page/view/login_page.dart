@@ -1,7 +1,6 @@
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_button.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_text_form_field.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
 
 class LoginPage extends StatefulWidget {
@@ -37,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
-        final width = constraints.maxWidth;
+        // final width = constraints.maxWidth;
         return Scaffold(
           resizeToAvoidBottomInset: false,
           body: SafeArea(
@@ -153,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                       //       }
                       //     }
                       //   }
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) {

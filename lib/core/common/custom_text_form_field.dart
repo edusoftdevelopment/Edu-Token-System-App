@@ -1,5 +1,4 @@
-import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:flutter/material.dart';
+part of 'common.dart';
 
 class CustomTextFormTokenSystem extends StatefulWidget {
   const CustomTextFormTokenSystem({
@@ -22,6 +21,7 @@ class CustomTextFormTokenSystem extends StatefulWidget {
     this.suffixIcon,
     this.borderRadius,
     this.onTap,
+    this.keyboardType,
   }) : assert(
          sameBorder == false || borderColor != null,
          'borderColor is required when sameBorder is true',
@@ -44,6 +44,7 @@ class CustomTextFormTokenSystem extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
   final Widget? suffixIcon;
   final void Function()? onTap;
+  final TextInputType? keyboardType;
 
   @override
   State<CustomTextFormTokenSystem> createState() =>
@@ -63,6 +64,7 @@ class _CustomTextFormTokenSystemState extends State<CustomTextFormTokenSystem> {
         textAlign: TextAlign.left,
         onTap: widget.onTap ?? () {},
         validator: widget.validator,
+        keyboardType: widget.keyboardType ?? TextInputType.text,
         cursorColor: widget.darkMode ? AppColors.kWhite : AppColors.kBlack,
         onTapOutside: (event) {
           FocusScope.of(context).unfocus();
