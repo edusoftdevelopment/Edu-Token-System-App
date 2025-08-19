@@ -1,10 +1,10 @@
 import 'dart:developer';
+
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/keys/edu_token_system_app_key.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 //! Function to initialize the app with necessary settings
 
 dynamic initialization() async {

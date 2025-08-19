@@ -14,6 +14,7 @@ class NetworkHelper {
       BaseOptions(
         baseUrl: baseUrl,
         receiveDataWhenStatusError: true,
+        
       ),
     );
 
@@ -24,6 +25,7 @@ class NetworkHelper {
           requestHeader: true,
           requestBody: true,
           responseHeader: true,
+          
         ),
       );
     }
@@ -72,6 +74,7 @@ class NetworkHelper {
   }
 
   // ! Using this method to make a (Put)
+
   Future<Response> put({
     required String endPoint,
     Map<String, dynamic>? params,

@@ -8,6 +8,7 @@ import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/view/new_token_main.dart';
 import 'package:edu_token_system_app/service/permission_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
@@ -84,7 +85,6 @@ class _LoginPageState extends State<LoginPage> {
             final width = constraints.maxWidth;
 
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: height * 0.05),
 
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! App Title
                 AutoSizeText(
-                  "Edu Token System",
+                  'Edu Token System',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     foreground: Paint()
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                      ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                   ),
                 ),
 
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! Welcome AutoSizeText
                 AutoSizeText(
-                  " Welcome Back 👋",
+                  ' Welcome Back 👋',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     foreground: Paint()
@@ -124,13 +124,13 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                      ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                   ),
                 ),
 
                 const SizedBox(height: 6),
                 AutoSizeText(
-                  "Login to continue",
+                  'Login to continue',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
@@ -140,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! Email Field
                 CustomTextFormTokenSystem(
-                  sameBorder: (authenticationPass == 'false'),
+                  sameBorder: authenticationPass == 'false',
                   borderColor: (authenticationPass == 'false')
                       ? AppColors.kDarkRed
                       : null,
@@ -158,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 ///! Password Field
                 CustomTextFormTokenSystem(
-                  sameBorder: (authenticationPass == 'false'),
+                  sameBorder: authenticationPass == 'false',
                   borderColor: (authenticationPass == 'false')
                       ? AppColors.kDarkRed
                       : null,
@@ -175,7 +175,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 if (authenticationPass == 'false') ...[
                   const SizedBox(height: 10),
-                  AutoSizeText(
+                  const AutoSizeText(
                     'Incorrect Email & Password ❌',
                     style: TextStyle(fontSize: 14, color: AppColors.kDarkRed),
                   ),
@@ -195,14 +195,18 @@ class _LoginPageState extends State<LoginPage> {
                   //         _passwordController.text.isNotEmpty)
                   //     ? Colors.white
                   //     : AppColors.kCustomBlueColor,
-                  name: "Login In",
+                  name: 'Login In',
                   onPressed: () {
-                    print(
+                    if (kDebugMode) {
+                      print(
                       'MOBILE SERIAL NUMBER ${AppConfig.mobileSerialNumber}',
                     );
+                    }
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const NewTokenMain()),
+                      MaterialPageRoute<dynamic>(
+                        builder: (_) => const NewTokenMain(),
+                      ),
                     );
                   },
                 ),
@@ -212,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
                 ///! Bottom Section with Emojis
                 Center(
                   child: AutoSizeText(
-                    "🔐 Secure Login | 🚀 Fast Access",
+                    '🔐 Secure Login | 🚀 Fast Access',
                     style: Theme.of(
                       context,
                     ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),

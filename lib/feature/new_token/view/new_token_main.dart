@@ -44,7 +44,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
         final screenWidth = constraints.maxWidth;
-        double dropdownWidth = screenWidth;
+        final dropdownWidth = screenWidth;
         return LayoutBuilder(
           builder: (context, constraints) {
             final height = constraints.maxHeight;
@@ -63,7 +63,6 @@ class _NewTokenMainState extends State<NewTokenMain> {
               ),
               body: Column(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   SizedBox(height: screenHeight * 0.03),
                   StreamBuilder<DateTime>(
@@ -79,7 +78,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                       }
                       final now = snapshot.data!;
                       _currentDateTime = now;
-                      final date = "${now.day}-${now.month}-${now.year}";
+                      final date = '${now.day}-${now.month}-${now.year}';
                       final time =
                           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
@@ -88,14 +87,14 @@ class _NewTokenMainState extends State<NewTokenMain> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           AutoSizeText(
-                            "Date: $date",
+                            'Date: $date',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           AutoSizeText(
-                            "Time: $time",
+                            'Time: $time',
                             style: const TextStyle(fontSize: 16),
                           ),
                         ],
@@ -103,7 +102,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     },
                   ),
                   SizedBox(height: height * 0.03),
-                  Align(
+                  const Align(
                     alignment: Alignment.centerLeft,
                     child: AutoSizeText(
                       'Choose Vehicle',
@@ -125,7 +124,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                         color: Colors.grey.shade400,
                         width: 1.2,
                       ),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: AppColors.kBlack12,
                           blurRadius: 6,
@@ -204,7 +203,7 @@ class _NewTokenMainState extends State<NewTokenMain> {
                     ),
                   ),
                   SizedBox(height: height * 0.01),
-                  Align(
+                  const Align(
                     alignment: Alignment.centerLeft,
                     child: AutoSizeText(
                       'Enter Vehicle Number',
@@ -224,12 +223,12 @@ class _NewTokenMainState extends State<NewTokenMain> {
 
                   SizedBox(height: height * 0.02),
 
-                  Spacer(),
+                  const Spacer(),
                   CustomButton(
                     name: 'Save',
                     onPressed: () {
                       if (_currentDateTime != null) {
-                        String formattedDateTime =
+                        final formattedDateTime =
                             '${_currentDateTime!.day}/${_currentDateTime!.month}/${_currentDateTime!.year} '
                             'at ${_currentDateTime!.hour}:${_currentDateTime!.minute.toString().padLeft(2, '0')}:${_currentDateTime!.second.toString().padLeft(2, '0')}';
 
