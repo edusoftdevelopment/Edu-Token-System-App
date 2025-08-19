@@ -1,3 +1,4 @@
+import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_button.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widget/custom_text_form_field.dart';
 import 'package:flutter/material.dart';
@@ -35,19 +36,24 @@ class _NewTokenMainState extends State<NewTokenMain> {
     // agar responsive width chahte ho to uncomment:
     // dropdownWidth = MediaQuery.of(context).size.width * 0.9;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Add Vehicle")),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Choose vehicle',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Scaffold(
+          // appBar: CustomAppBarEduTokenSystem(
+          //   title: 'Add Token',
+          //   size: ,
+          // ),
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    'Choose vehicle',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
 
             // PopupMenuButton with same styling as dropdown
             Container(
@@ -130,28 +136,32 @@ class _NewTokenMainState extends State<NewTokenMain> {
               style: const TextStyle(fontSize: 15),
             ),
 
-            const SizedBox(height: 20),
-            CustomButton(
-              name: 'Save',
-              onPressed: () {
-                // Current date and time
-                DateTime now = DateTime.now();
-                String formattedDateTime =
-                    '${now.day}/${now.month}/${now.year} at ${now.hour}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+                const SizedBox(height: 20),
+                CustomButton(
+                  name: 'Save',
+                  onPressed: () {
+                    // Current date and time
+                    DateTime now = DateTime.now();
+                    String formattedDateTime =
+                        '${now.day}/${now.month}/${now.year} at ${now.hour}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
 
-                // Show current date and time
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Current Date & Time: $formattedDateTime'),
-                    backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              },
+                    // Show current date and time
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Current Date & Time: $formattedDateTime',
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
