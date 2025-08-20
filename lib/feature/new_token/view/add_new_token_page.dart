@@ -3,6 +3,7 @@ import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
+import 'package:edu_token_system_app/feature/token_history/view/token_history.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class AddNewTokenPage extends StatefulWidget {
@@ -227,7 +228,16 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                   const Spacer(),
                   CustomButton(
                     name: 'Save',
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return TokenHistoryPage();
+                          },
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 50),
                 ],
