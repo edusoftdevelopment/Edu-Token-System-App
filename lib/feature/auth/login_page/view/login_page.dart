@@ -38,8 +38,8 @@ class _LoginPageState extends State<LoginPage> {
   DbListsModel? selectedDb;
   bool loadingDbList = false;
   final _mssqlPort = 1433;
-  String?
-  selectedDatabase; // change if your instance uses a different static port
+  String selectedDatabase =
+      'Select Database'; // change if your instance uses a different static port
   List<LoginInfoModel>? loginInfoList;
   bool? loginMatched;
 
@@ -76,8 +76,10 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSerialNumber();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dbList = await _getDatabsesList();
+
+      await _fetchSerialNumber();
     });
   }
 
@@ -85,8 +87,6 @@ class _LoginPageState extends State<LoginPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      dbList = await _getDatabsesList();
-
       selectedDatabase = await _getSelectedDatabase();
     });
   }
@@ -230,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
         loginInfo = result;
         log('Login Info: $loginInfo');
 
-        List<dynamic> decoded2 = jsonDecode(loginInfo) as List<dynamic>;
+        final decoded2 = jsonDecode(loginInfo) as List<dynamic>;
         loginInfoList = decoded2
             .map<LoginInfoModel>(
               (json) => LoginInfoModel.fromJson(json as Map<String, dynamic>),
@@ -248,7 +248,6 @@ class _LoginPageState extends State<LoginPage> {
       if (!loginMatched!) {
         throw Exception('Invalid email or password');
       }
-
 
       // Set runtime values if login successful
       AppConfig.loginId = username;
@@ -296,17 +295,17 @@ class _LoginPageState extends State<LoginPage> {
     if (input == null) return '';
 
     // Agar '€' mojood ho toh us se pehle ka part lo
-    int idx = input.indexOf('€');
-    String part = idx >= 0 ? input.substring(0, idx) : input;
+    final idx = input.indexOf('€');
+    final part = idx >= 0 ? input.substring(0, idx) : input;
 
     if (part.isEmpty) return '';
 
     final buffer = StringBuffer();
-    const int key = 3; // XOR key
+    const key = 3; // XOR key
 
-    for (int i = 0; i < part.length; i++) {
-      int code = part.codeUnitAt(i);
-      int decoded = code ^ key;
+    for (var i = 0; i < part.length; i++) {
+      final code = part.codeUnitAt(i);
+      final decoded = code ^ key;
       buffer.writeCharCode(decoded);
     }
 
@@ -332,7 +331,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = 'selectedDb';
+    const key = 'selectedDb';
     await prefs.setString(key, seectedDatabase);
   }
 
