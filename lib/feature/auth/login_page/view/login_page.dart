@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -22,6 +23,7 @@ import 'package:flutter/foundation.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 // Replaced MySQL package with MSSQL package
 import 'package:mssql_connection/mssql_connection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,9 +40,10 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   List<DbListsModel> dbList = [];
   DbListsModel? selectedDb;
-
-  final _mssqlPort =
-      1433; // change if your instance uses a different static port
+  bool loadingDbList = false;
+  final _mssqlPort = 1433;
+  String?
+  selectedDatabase; // change if your instance uses a different static port
 
   Future<String?> getSerialNo() async {
     try {
@@ -85,7 +88,17 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dbList = await _getDatabsesList();
+      if (dbList.isNotEmpty) {
+        selectedDb = dbList.first; // Set default to first database
+        await _setDatabse(seectedDatabase: selectedDb!.defaultDB!);
+      } else {
+        await _showErrorDialog(
+          'No Databases Found',
+          'Please check your connection or contact support.',
+        );
+      }
     });
+    final selectedDatabase = _getSelectedDatabase();
   }
 
   @override
@@ -123,6 +136,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<List<DbListsModel>> _getDatabsesList() async {
+    setState(() {
+      loadingDbList = true;
+    });
     final _db = MssqlConnection.getInstance();
     const maxRetries = 1;
     int retry = 0;
@@ -172,12 +188,14 @@ class _LoginPageState extends State<LoginPage> {
     if (jsonResDbList == null) {
       throw Exception('No databases found');
     }
-
+    setState(() {
+      loadingDbList = false;
+    });
     return dbLists;
   }
 
   Future<void> _attemptLogin() async {
-    final db = MssqlConnection.getInstance();
+    final db1 = MssqlConnection.getInstance();
     final username = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -195,15 +213,16 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      // Attempt to connect to database
       var retry = 0;
       const maxRetries = 1;
 
       while (retry < maxRetries) {
         try {
-          await db.connect(
+          await db1.connect(
             ip: '192.168.7.3',
             port: '4914',
-            databaseName: 'eduConnectionDB',
+            databaseName: selectedDatabase ?? '',
             username: 'sa',
             password: '2MSZXGYTUOM4',
           );
@@ -213,94 +232,59 @@ class _LoginPageState extends State<LoginPage> {
           if (retry >= maxRetries) {
             throw Exception('Failed to connect after $maxRetries attempts: $e');
           }
-
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-      if (db.isConnected == false) {
-        throw Exception('Connection failed');
-      }
-      log('Connection attempt finished');
-      // Step 1: Query execute karo
-      String? jsonResDbList;
-      await db
-          .getData(
-            "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
-          )
-          .then((value) {
-            jsonResDbList = value;
-          });
 
-      // Step 2: decode karo aur model list banao
-      final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
-
-      // Step 3: har ek map ko model me convert karo
-      final dbLists = decoded
-          .map<DbListsModel>(
-            (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
-          )
-          .toList();
-
-      // Step 4: ab use kar sakte ho
-      for (final db in dbLists) {
-        print('DefaultDB: ${db.defaultDB}, Alias: ${db.alias}');
+      if (!db1.isConnected) {
+        throw Exception('Connection failed - database is not connected');
       }
 
-      log(
-        'JSON   $jsonResDbList',
-      );
-      if (jsonResDbList == null) {
-        throw Exception('No databases found');
+      log('2nd Connection established successfully');
+
+      //! get login info
+      String? loginInfo;
+      try {
+        final result = await db1.getData(
+          'Select LoginId, LoginInfo.EmployeeCode, LoginName, Password, StopNegativeKOT, Employees.EmployeeName From LoginInfo inner join Employees on LoginInfo.EmployeeCode=Employees.EmployeeCode',
+        );
+        loginInfo = result;
+        log('Login Info: $loginInfo');
+      } catch (e) {
+        throw Exception('Failed to fetch login info: $e');
       }
 
-      // Step 3: Check if initialDatabase exists
-      // final initialDbExists = resDbList.any(
-      //   (db) => db['name'].toString().toLowerCase() == 'edu2k8',
-      // );
-
-      // if (!initialDbExists) {
-      //   throw Exception('Initial database EDU2K8 not found');
-      // }
-
-      // Step 4: Attempt login
-      final encryptedPassword = encrypt_pkg.Encrypted.fromBase64(
-        AppConfig.aesKey,
-      );
-      // final decryptedPassword = tryAesDecrypt(
-      //   encryptedPassword.base64,
-      //   AppConfig.aesKey,
-      //   AppConfig.aesIv,
-      // );
-
-      // if (decryptedPassword == null ||
-      //     decryptedPassword != vbDecrypt(password)) {
-      //   throw Exception('Invalid credentials');
-      // }
-
-      // Step 5: Set runtime values
+      // Set runtime values if login successful
       AppConfig.loginId = username;
-      AppConfig.employeeName = username; // Assuming username is employee name
+      AppConfig.employeeName = username;
       AppConfig.currentDatabase = 'EDU2K8';
 
-      // Navigate to AddNewTokenPage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AddNewTokenPage()),
-      );
+      // TODO: Add navigation after successful login
     } catch (e) {
+      log('Login error: $e'); // Add logging
       if (mounted) {
-        // Add this check
         await _showErrorDialog(
-          'Connection Error',
-          'Failed to connect to database: $e',
+          'Login Error',
+          e.toString(),
         );
       }
     } finally {
       if (mounted) {
-        // Add this check
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _setDatabse({required String seectedDatabase}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'selectedDb';
+  }
+
+  Future<String> _getSelectedDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'selectedDb';
+    final selectedDb = prefs.getString(key);
+    return selectedDb ?? ''; // Default database if none selected
   }
 
   @override
@@ -417,10 +401,14 @@ class _LoginPageState extends State<LoginPage> {
               CustomDbDropdown(
                 width: width,
                 items: dbList,
+                hintText: loadingDbList
+                    ? 'Loading Databses...'
+                    : selectedDatabase ?? 'Select Database',
                 selectedItem: selectedDb,
                 onSelected: (value) {
                   setState(() {
                     selectedDb = value;
+                    _setDatabse(seectedDatabase: value.defaultDB!);
                   });
                 },
               ),
