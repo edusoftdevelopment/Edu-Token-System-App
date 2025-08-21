@@ -7,17 +7,14 @@ class DbListsSp {
   // key constant
   static const String kDbListsPrefKey = 'db_lists';
 
-
   // Save function
   Future<void> saveDbListsToPrefs(List<DbListsModel> dbLists) async {
     final prefs = await SharedPreferences.getInstance();
 
     // List of Map => encode to json string
-    final List<Map<String, dynamic>> listOfMaps = dbLists
-        .map((e) => e.toJson())
-        .toList();
+    final listOfMaps = dbLists.map((e) => e.toJson()).toList();
 
-    final String jsonString = jsonEncode(listOfMaps);
+    final jsonString = jsonEncode(listOfMaps);
 
     await prefs.setString(kDbListsPrefKey, jsonString);
   }
@@ -25,15 +22,14 @@ class DbListsSp {
   // Load function
   Future<List<DbListsModel>> loadDbListsFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? jsonString = prefs.getString(kDbListsPrefKey);
+    final jsonString = prefs.getString(kDbListsPrefKey);
 
     if (jsonString == null || jsonString.isEmpty) {
       return <DbListsModel>[];
     }
 
-    final List<dynamic> decoded =
-        jsonDecode(jsonString as String) as List<dynamic>;
-    final List<DbListsModel> dbLists = decoded
+    final decoded = jsonDecode(jsonString) as List<dynamic>;
+    final dbLists = decoded
         .map<DbListsModel>(
           (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
         )
@@ -48,7 +44,6 @@ class DbListsSp {
     await prefs.remove(kDbListsPrefKey);
   }
 }
-
 
 // // Save karna
 // await saveDbListsToPrefs(dbLists);

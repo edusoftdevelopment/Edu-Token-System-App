@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
-import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
@@ -15,12 +13,9 @@ import 'package:edu_token_system_app/core/model/db_lists_model.dart';
 import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
-import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
 import 'package:edu_token_system_app/feature/setting/view/setting_page.dart';
-import 'package:encrypt/encrypt.dart' as encrypt_pkg;
 
-import 'package:flutter/foundation.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 // Replaced MySQL package with MSSQL package
 import 'package:mssql_connection/mssql_connection.dart';
@@ -43,8 +38,8 @@ class _LoginPageState extends State<LoginPage> {
   DbListsModel? selectedDb;
   bool loadingDbList = false;
   final _mssqlPort = 1433;
-  String?
-  selectedDatabase; // change if your instance uses a different static port
+  String selectedDatabase =
+      'Select Database'; // change if your instance uses a different static port
   List<LoginInfoModel>? loginInfoList;
   bool? loginMatched;
 
@@ -81,8 +76,10 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSerialNumber();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dbList = await _getDatabsesList();
+
+      await _fetchSerialNumber();
     });
   }
 
@@ -90,7 +87,6 @@ class _LoginPageState extends State<LoginPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      dbList = await _getDatabsesList();
       selectedDatabase = await _getSelectedDatabase();
     });
   }
@@ -133,13 +129,13 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       loadingDbList = true;
     });
-    final _db = MssqlConnection.getInstance();
+    final db = MssqlConnection.getInstance();
     const maxRetries = 1;
-    int retry = 0;
+    var retry = 0;
 
     while (retry < maxRetries) {
       try {
-        await _db.connect(
+        await db.connect(
           ip: '192.168.7.3',
           port: '4914',
           databaseName: 'eduConnectionDB',
@@ -156,13 +152,13 @@ class _LoginPageState extends State<LoginPage> {
         await Future.delayed(const Duration(seconds: 1));
       }
     }
-    if (_db.isConnected == false) {
+    if (db.isConnected == false) {
       throw Exception('Connection failed');
     }
     log('Connection attempt finished');
     // Step 1: Query execute karo
     String? jsonResDbList;
-    await _db
+    await db
         .getData(
           "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
         )
@@ -171,10 +167,10 @@ class _LoginPageState extends State<LoginPage> {
         });
 
     // Step 2: decode karo aur model list banao
-    final List<dynamic> decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+    final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
 
     // Step 3: har ek map ko model me convert karo
-    List<DbListsModel> dbLists = decoded
+    final dbLists = decoded
         .map<DbListsModel>(
           (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
         )
@@ -234,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
         loginInfo = result;
         log('Login Info: $loginInfo');
 
-        List<dynamic> decoded2 = jsonDecode(loginInfo) as List<dynamic>;
+        final decoded2 = jsonDecode(loginInfo) as List<dynamic>;
         loginInfoList = decoded2
             .map<LoginInfoModel>(
               (json) => LoginInfoModel.fromJson(json as Map<String, dynamic>),
@@ -299,17 +295,17 @@ class _LoginPageState extends State<LoginPage> {
     if (input == null) return '';
 
     // Agar '€' mojood ho toh us se pehle ka part lo
-    int idx = input.indexOf('€');
-    String part = idx >= 0 ? input.substring(0, idx) : input;
+    final idx = input.indexOf('€');
+    final part = idx >= 0 ? input.substring(0, idx) : input;
 
     if (part.isEmpty) return '';
 
     final buffer = StringBuffer();
-    const int key = 3; // XOR key
+    const key = 3; // XOR key
 
-    for (int i = 0; i < part.length; i++) {
-      int code = part.codeUnitAt(i);
-      int decoded = code ^ key;
+    for (var i = 0; i < part.length; i++) {
+      final code = part.codeUnitAt(i);
+      final decoded = code ^ key;
       buffer.writeCharCode(decoded);
     }
 
@@ -335,13 +331,13 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = 'selectedDb';
+    const key = 'selectedDb';
     await prefs.setString(key, seectedDatabase);
   }
 
   Future<String> _getSelectedDatabase() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = 'selectedDb';
+    const key = 'selectedDb';
     final selectedDb = prefs.getString(key);
     return selectedDb ?? ''; // Default database if none selected
   }
@@ -364,12 +360,23 @@ class _LoginPageState extends State<LoginPage> {
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<dynamic>(
-                      builder: (context) => const BranchInfoPage(),
-                    ),
-                  ),
+                  onPressed: () {
+                    var status = 'No password entered yet';
+                    showDialog<void>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return PasswordDialog(
+                          onPasswordValidated: (isValid) {
+                            setState(() {
+                              status = isValid
+                                  ? 'Password accepted! Access granted.'
+                                  : 'Invalid password. Try again.';
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
                   icon: Icons.settings.toCustomIcon(
                     color: AppColors.kCustomBlueColor,
                     size: 30,

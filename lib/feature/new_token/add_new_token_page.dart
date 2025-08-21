@@ -17,7 +17,7 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
-  DateTime? _currentDateTime;
+  DateTime? currentDateTime;
 
   @override
   void initState() {
@@ -77,7 +77,7 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                         );
                       }
                       final now = snapshot.data!;
-                      _currentDateTime = now;
+                      currentDateTime = now;
                       final date = '${now.day}-${now.month}-${now.year}';
                       final time =
                           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
@@ -230,9 +230,9 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        MaterialPageRoute<TokenHistoryPage>(
                           builder: (context) {
-                            return TokenHistoryPage();
+                            return const TokenHistoryPage();
                           },
                         ),
                       );

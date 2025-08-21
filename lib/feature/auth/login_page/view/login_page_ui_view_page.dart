@@ -9,7 +9,6 @@ import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/network/network.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
-import 'package:edu_token_system_app/feature/setting/view/setting_page.dart';
 import 'package:flutter/foundation.dart';
 
 class LoginPage extends StatefulWidget {
@@ -84,8 +83,6 @@ class _LoginPageState extends State<LoginPage> {
             return Column(
               children: [
                 SizedBox(height: height * 0.05),
-
-                Container(),
 
                 ///! App Title
                 AutoSizeText(

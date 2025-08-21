@@ -1,9 +1,18 @@
 // file: custom_db_dropdown.dart
+import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
-import 'package:flutter/material.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 
 class CustomDbDropdown extends StatelessWidget {
+  const CustomDbDropdown({
+    required this.width,
+    required this.items,
+    required this.onSelected,
+    super.key,
+    this.selectedItem,
+    this.hintText = 'Select DB',
+    this.verticalPadding = 16,
+    this.horizontalPadding = 12,
+  });
   final double width;
   final List<DbListsModel> items;
   final DbListsModel? selectedItem;
@@ -11,17 +20,6 @@ class CustomDbDropdown extends StatelessWidget {
   final String hintText;
   final double verticalPadding;
   final double horizontalPadding;
-
-  const CustomDbDropdown({
-    Key? key,
-    required this.width,
-    required this.items,
-    required this.onSelected,
-    this.selectedItem,
-    this.hintText = 'Select DB',
-    this.verticalPadding = 16,
-    this.horizontalPadding = 12,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +42,7 @@ class CustomDbDropdown extends StatelessWidget {
       ),
       child: PopupMenuButton<DbListsModel>(
         constraints: BoxConstraints(minWidth: width, maxWidth: width),
-        onSelected: (DbListsModel value) => onSelected(value),
+        onSelected: onSelected,
         itemBuilder: (context) => items.map((DbListsModel item) {
           return PopupMenuItem<DbListsModel>(
             value: item,
