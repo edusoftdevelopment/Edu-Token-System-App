@@ -22,6 +22,7 @@ class CustomTextFormTokenSystem extends StatefulWidget {
     this.borderRadius,
     this.onTap,
     this.keyboardType,
+    this.textCapitalization,
   }) : assert(
          sameBorder == false || borderColor != null,
          'borderColor is required when sameBorder is true',
@@ -45,6 +46,7 @@ class CustomTextFormTokenSystem extends StatefulWidget {
   final Widget? suffixIcon;
   final void Function()? onTap;
   final TextInputType? keyboardType;
+  final TextCapitalization? textCapitalization;
 
   @override
   State<CustomTextFormTokenSystem> createState() =>
@@ -58,7 +60,7 @@ class _CustomTextFormTokenSystemState extends State<CustomTextFormTokenSystem> {
   Widget build(BuildContext context) {
     return Container(
       width: widget.width ?? double.infinity,
-      height: widget.height, 
+      height: widget.height,
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
@@ -69,6 +71,8 @@ class _CustomTextFormTokenSystemState extends State<CustomTextFormTokenSystem> {
         ],
       ),
       child: TextFormField(
+        textCapitalization:
+            widget.textCapitalization ?? TextCapitalization.none,
         textAlignVertical: TextAlignVertical.top,
         textAlign: TextAlign.left,
         onTap: widget.onTap ?? () {},
