@@ -11,6 +11,7 @@ import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
 import 'package:encrypt/encrypt.dart' as encrypt_pkg;
@@ -33,6 +34,8 @@ class _LoginPageState extends State<LoginPage> {
   String authenticationPass = 'true';
   String? _serialNo;
   bool _isLoading = false;
+  List<DbListsModel> dbList = [];
+  DbListsModel? selectedDb;
 
   final _mssqlPort =
       1433; // change if your instance uses a different static port
@@ -76,6 +79,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dbList = await _getDatabsesList();
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -107,6 +118,60 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
     );
+  }
+
+  Future<List<DbListsModel>> _getDatabsesList() async {
+    final _db = MssqlConnection.getInstance();
+    const maxRetries = 1;
+    int retry = 0;
+
+    while (retry < maxRetries) {
+      try {
+        await _db.connect(
+          ip: '192.168.7.3',
+          port: '4914',
+          databaseName: 'eduConnectionDB',
+          username: 'sa',
+          password: '2MSZXGYTUOM4',
+        );
+        break;
+      } catch (e) {
+        retry++;
+        if (retry >= maxRetries) {
+          throw Exception('Failed to connect after $maxRetries attempts: $e');
+        }
+
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+    if (_db.isConnected == false) {
+      throw Exception('Connection failed');
+    }
+    log('Connection attempt finished');
+    // Step 1: Query execute karo
+    String? jsonResDbList;
+    await _db
+        .getData(
+          "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
+        )
+        .then((value) {
+          jsonResDbList = value;
+        });
+
+    // Step 2: decode karo aur model list banao
+    final List<dynamic> decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+
+    // Step 3: har ek map ko model me convert karo
+    List<DbListsModel> dbLists = decoded
+        .map<DbListsModel>(
+          (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
+        )
+        .toList();
+    if (jsonResDbList == null) {
+      throw Exception('No databases found');
+    }
+
+    return dbLists;
   }
 
   Future<void> _attemptLogin() async {
@@ -292,6 +357,7 @@ class _LoginPageState extends State<LoginPage> {
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
+
               SizedBox(height: height * 0.06),
               CustomTextFormTokenSystem(
                 sameBorder: authenticationPass == 'false',
@@ -330,7 +396,18 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(fontSize: 14, color: AppColors.kDarkRed),
                 ),
               ],
-              SizedBox(height: height * 0.05),
+              SizedBox(height: height * 0.02),
+              CustomDbDropdown(
+                width: width,
+                items: dbList,
+                selectedItem: selectedDb,
+                onSelected: (value) {
+                  setState(() {
+                    selectedDb = value;
+                  });
+                },
+              ),
+              SizedBox(height: height * 0.02),
               // FIXED: now onPressed will call the function (not return it)
               if (_isLoading)
                 CustomButton(
