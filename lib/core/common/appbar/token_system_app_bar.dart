@@ -42,7 +42,6 @@ class CustomAppBarEduTokenSystem extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    size = MediaQuery.of(context).size;
     final theme = Theme.of(context);
     final appBarTheme = theme.appBarTheme;
 
@@ -56,9 +55,7 @@ class CustomAppBarEduTokenSystem extends StatelessWidget
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-      titleTextStyle:
-          appBarTheme.titleTextStyle ??
-          const TextStyle(overflow: TextOverflow.ellipsis),
+      titleTextStyle:titleStyle ?? appBarTheme.titleTextStyle,
       centerTitle: centerTitle,
       actions: actions,
       backgroundColor: Colors.transparent,

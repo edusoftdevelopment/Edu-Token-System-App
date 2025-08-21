@@ -1,18 +1,17 @@
 class DbListsModel {
-  String? defaultDB;
-  String? alias;
-
   DbListsModel({this.defaultDB, this.alias});
 
   DbListsModel.fromJson(Map<String, dynamic> json) {
     defaultDB = json['DefaultDB'] as String?;
     alias = json['Alias'] as String?;
   }
+  String? defaultDB;
+  String? alias;
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['DefaultDB'] = this.defaultDB;
-    data['Alias'] = this.alias;
+    final data = <String, dynamic>{};
+    data['DefaultDB'] = defaultDB;
+    data['Alias'] = alias;
     return data;
   }
 }

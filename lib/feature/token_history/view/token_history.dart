@@ -18,7 +18,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
   Future<bool> requestBluetoothPermissions() async {
     if (!Platform.isAndroid && !Platform.isIOS) return true;
 
-    final List<Permission> permissions = [];
+    final permissions = <Permission>[];
 
     if (Platform.isAndroid) {
       permissions.addAll([
@@ -45,7 +45,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
     }
 
     // Collect statuses and print for debugging
-    final Map<Permission, PermissionStatus> statuses = {};
+    final statuses = <Permission, PermissionStatus>{};
     for (final p in permissions) {
       try {
         final s = await p.status;
@@ -58,7 +58,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
     // Debug output: print all statuses so you can see what the plugin returns.
     debugPrint('--- Bluetooth permission statuses ---');
     statuses.forEach((perm, stat) {
-      debugPrint('${perm.toString()} -> ${stat.toString()}');
+      debugPrint('$perm -> $stat');
     });
 
     // Decide success:
@@ -82,7 +82,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
     // If no bluetooth enums were available (statuses doesn't contain any of them),
     // fallback to location permission (useful for older Android devices where location was needed for BLE scan)
     final anyBluetoothEnumAvailable = bluetoothKeys.any(
-      (k) => statuses.containsKey(k),
+      statuses.containsKey,
     );
 
     if (!anyBluetoothEnumAvailable) {
@@ -97,7 +97,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
   }
 
   Future<bool> _anyPermissionPermanentlyDenied() async {
-    final List<Permission> checkPerms = [];
+    final checkPerms = <Permission>[];
     if (Platform.isAndroid) {
       checkPerms.addAll([
         Permission.bluetooth,
@@ -148,7 +148,7 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
   }
 
   void _showOpenSettingsDialog() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Permission required'),
@@ -175,12 +175,10 @@ class _TokenHistoryPageState extends State<TokenHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Bluetooth Printer Example")),
+      appBar: AppBar(title: const Text('Bluetooth Printer Example')),
       body: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [],
-        ),
+        padding: EdgeInsets.all(16),
+        child: Column(),
       ),
     );
   }
