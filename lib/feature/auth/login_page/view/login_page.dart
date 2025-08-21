@@ -6,13 +6,16 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
 import 'package:encrypt/encrypt.dart' as encrypt_pkg;
 
 import 'package:flutter/foundation.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 // Replaced MySQL package with MSSQL package
 import 'package:mssql_connection/mssql_connection.dart';
 
@@ -21,68 +24,6 @@ class LoginPage extends StatefulWidget {
 
   @override
   State<LoginPage> createState() => _LoginPageState();
-}
-
-/// Simple MSSQL wrapper to approximate mysql1's connect/query/close usage in this file.
-/// NOTE: This wrapper assumes the `mssql_connection` package exposes
-/// `MssqlConnection.getInstance()`, `connect(...)`, `readData(query, params?)`, and `close()` methods.
-/// If your MSSQL package exposes different method names, adjust the wrapper accordingly.
-class MssqlHelper {
-  final _db = MssqlConnection.getInstance();
-
-  Future<void> connect({
-    required String ip,
-    required String port,
-    required String username,
-    required String password,
-    required String databaseName,
-  }) async {
-    await _db.connect(
-      ip: ip,
-      port: port,
-      username: username,
-      password: password,
-      databaseName: databaseName,
-    );
-  }
-
-  Future<void> close() async {
-    await _db.disconnect();
-  }
-
-  /// Executes a query where the SQL uses `?` placeholders (same style as mysql1).
-  /// This function replaces each `?` with `@p0,@p1,...` and passes a parameter map to the underlying driver.
-  Future<List<List<dynamic>>> query(String sql, [List<dynamic>? params]) async {
-    params ??= [];
-
-    // Replace '?' with '@p0', '@p1', ... and build param map
-    var newSql = sql;
-    final paramMap = <String, dynamic>{};
-    for (var i = 0; i < params.length; i++) {
-      newSql = newSql.replaceFirst('?', '@p$i');
-      paramMap['p$i'] = params[i];
-    }
-
-    // The assumed API: readData(sql, paramsMap) -> returns List<Map<String,dynamic>>
-    final raw = await _db.getData(
-      newSql,
-    );
-
-    // Convert result (List<Map<..>>) to List<List<dynamic>> to mimic mysql1.Results row access by index
-    final rows = <List<dynamic>>[];
-    if (raw is List) {
-      for (final r in raw as List) {
-        if (r is Map<String, dynamic>) {
-          rows.add(r.values.toList());
-        } else if (r is List) {
-          rows.add(List<dynamic>.from(r));
-        } else {
-          rows.add([r]);
-        }
-      }
-    }
-    return rows;
-  }
 }
 
 class _LoginPageState extends State<LoginPage> {
@@ -202,100 +143,33 @@ class _LoginPageState extends State<LoginPage> {
 
   // Centralized error dialog + state cleanup
   Future<void> _showErrorDialog(String title, String message) async {
-    // ensure any loading dialogs are closed
-    try {
-      Navigator.of(context).pop(); // attempt to close loading dialog if present
-    } catch (_) {}
     setState(() {
       _isLoading = false;
       authenticationPass = 'false';
     });
 
-    await showDialog(
+    if (!mounted) return;
+
+    return showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      barrierDismissible: false, // User must tap button to close dialog
+      builder: (BuildContext context) => AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
+            onPressed: () {
+              Navigator.of(context).pop(); // This will close the dialog
+            },
           ),
         ],
       ),
     );
   }
 
-  /// Resolve named SQL Server instance to TCP port using SQL Browser (UDP 1434).
-  /// Returns port as int on success, or null on failure/timeout.
-  Future<int?> resolveSqlInstancePort({
-    required String host, // e.g. '192.168.7.3'
-    required String instanceName, // e.g. 'EDU2K8'
-    Duration timeout = const Duration(seconds: 3),
-  }) async {
-    RawDatagramSocket? socket;
-    try {
-      socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.readEventsEnabled = true;
-
-      // Request payload (0x02 = enumerate instances)
-      final request = Uint8List.fromList([0x02]);
-
-      // Send request to SQL Browser Service (UDP 1434)
-      final remote = InternetAddress(host);
-      socket.send(request, remote, 1434);
-
-      final completer = Completer<int?>();
-      Timer? watch;
-
-      // Timeout safety
-      watch = Timer(timeout, () {
-        if (!completer.isCompleted) completer.complete(null);
-        socket?.close();
-      });
-
-      socket.listen((event) {
-        if (event == RawSocketEvent.read) {
-          final datagram = socket?.receive();
-          if (datagram == null) return;
-
-          final resp = utf8.decode(datagram.data, allowMalformed: true);
-          // print('SQL Browser Response: $resp');
-
-          // Normalize lowercase
-          final lower = resp.toLowerCase();
-          final needle = instanceName.toLowerCase();
-
-          if (lower.contains(needle)) {
-            // Find "tcp" + port
-            final broadMatch = RegExp(
-              '$needle.*?tcp[^0-9]*([0-9]{2,5})',
-              caseSensitive: false,
-              dotAll: true,
-            ).firstMatch(lower);
-
-            if (broadMatch != null) {
-              final port = int.tryParse(broadMatch.group(1)!);
-              if (port != null && !completer.isCompleted) {
-                completer.complete(port);
-                watch?.cancel();
-                socket?.close();
-              }
-            }
-          }
-        }
-      });
-
-      return await completer.future;
-    } catch (e) {
-      // Agar error aa jaye to null return karein
-      return null;
-    } finally {
-      socket?.close();
-    }
-  }
-
   Future<void> _attemptLogin() async {
+    final _db = MssqlConnection.getInstance();
     final username = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -312,78 +186,99 @@ class _LoginPageState extends State<LoginPage> {
       authenticationPass = 'true';
     });
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
     try {
-      // Step 1: Connect to LoginMainDB (eduConnectionDB) with retry logic
       MssqlHelper? conn;
       int retry = 0;
-      String? connectionError;
+      const maxRetries = 3;
 
-      while (retry < 3) {
+      while (retry < maxRetries) {
         try {
-          conn = MssqlHelper();
-
-          final port = await resolveSqlInstancePort(
-            host: '192.168.7.3',
-            instanceName: 'EDU2K8',
+          await _db.connect(
+            ip: '192.168.7.3',
+            port: '4914',
+            databaseName: 'eduConnectionDB',
+            username: 'sa',
+            password: '2MSZXGYTUOM4',
+            timeoutInSeconds: 15,
           );
-          if (port == null) {
-          } else {
-            // use port.toString() when calling your MSSQL connect
-            // try to resolve port first
-            final instance = 'EDU2K8';
-            int? port = await resolveSqlInstancePort(
-              host: '192.168.7.3',
-              instanceName: instance,
-            );
-
-            // proceed with authenticated session...
-
-            await conn.connect(
-              
-              ip: '192.168.7.3',
-              // port: port.toString(),
-              port: '1433',
-              username: 'sa',
-              password: '2MSZXGYTUOM4',
-              databaseName: 'EDU2K8',
-            );
-          }
-
-          // connectionError = null;
-          // break;
+          break;
         } catch (e) {
           retry++;
-          connectionError = e.toString();
-
-          if (retry >= 3) {
-            await _showErrorDialog(
-              'Connection Error',
-              'Unable to connect to database server after 3 attempts: $connectionError',
-            );
-
-            return;
+          if (retry >= maxRetries) {
+            throw Exception('Failed to connect after $maxRetries attempts: $e');
           }
-          // Wait before retry
+
           await Future.delayed(const Duration(seconds: 1));
         }
       }
+      if (conn == null) {
+        throw Exception('Connection failed');
+      }
+      log('Connection attempt finished');
 
-      if (conn!._db.isConnected) return;
-    } catch (e) {
-      await _showErrorDialog(
-        'Connection Error',
-        'Failed to connect to database: ${e.toString()}',
+      // query logic here
+      // Step 2: Get available databases
+      String? jsonResDbList;
+      await _db
+          .getData(
+            "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
+          )
+          .then((value) {
+            jsonResDbList = value;
+          });
+      log('${jsonResDbList}' as String);
+      if (jsonResDbList == null) {
+        throw Exception('No databases found');
+      }
+
+      // Step 3: Check if initialDatabase exists
+      // final initialDbExists = resDbList.any(
+      //   (db) => db['name'].toString().toLowerCase() == 'edu2k8',
+      // );
+
+      // if (!initialDbExists) {
+      //   throw Exception('Initial database EDU2K8 not found');
+      // }
+
+      // Step 4: Attempt login
+      final encryptedPassword = encrypt_pkg.Encrypted.fromBase64(
+        AppConfig.aesKey,
       );
-      return;
+      final decryptedPassword = tryAesDecrypt(
+        encryptedPassword.base64,
+        AppConfig.aesKey,
+        AppConfig.aesIv,
+      );
+
+      if (decryptedPassword == null ||
+          decryptedPassword != vbDecrypt(password)) {
+        throw Exception('Invalid credentials');
+      }
+
+      // Step 5: Set runtime values
+      AppConfig.loginId = username;
+      AppConfig.employeeName = username; // Assuming username is employee name
+      AppConfig.currentDatabase = 'EDU2K8';
+
+      // Navigate to AddNewTokenPage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AddNewTokenPage()),
+      );
+    } catch (e) {
+      if (mounted) {
+        // Add this check
+        await _showErrorDialog(
+          'Connection Error',
+          'Failed to connect to database: ${e.toString()}',
+        );
+      }
+    } finally {
+      if (mounted) {
+        // Add this check
+        setState(() => _isLoading = false);
+      }
     }
-     
   }
 
   @override
@@ -482,10 +377,21 @@ class _LoginPageState extends State<LoginPage> {
               ],
               SizedBox(height: height * 0.05),
               // FIXED: now onPressed will call the function (not return it)
-              CustomButton(
-                name: _isLoading ? 'Logging in...' : 'Login In',
-                onPressed: _attemptLogin,
-              ),
+              if (_isLoading)
+                CustomButton(
+                  widget: Center(
+                    child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: AppColors.kWhite,
+                      size: 28,
+                    ),
+                  ),
+                  onPressed: () {},
+                )
+              else
+                CustomButton(
+                  name: 'Login In',
+                  onPressed: _attemptLogin,
+                ),
               const SizedBox(height: 24),
               Center(
                 child: AutoSizeText(
