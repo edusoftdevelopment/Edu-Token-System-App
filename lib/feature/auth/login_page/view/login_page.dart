@@ -8,6 +8,7 @@ import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
+import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
 import 'package:encrypt/encrypt.dart' as encrypt_pkg;
@@ -97,17 +98,18 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<String?> getSerialNo() async {
     try {
-      final deviceInfo = DeviceInfoPlugin();
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+
       if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        return androidInfo.id; // ANDROID_ID
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         return iosInfo.identifierForVendor;
       }
       return null;
     } catch (e) {
-      if (kDebugMode) print('Error getting device ID: $e');
+      print('Error getting device ID: $e');
       return null;
     }
   }

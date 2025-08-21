@@ -18,7 +18,6 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
   DateTime? _currentDateTime;
-  // Control width from yahan
 
   @override
   void initState() {
