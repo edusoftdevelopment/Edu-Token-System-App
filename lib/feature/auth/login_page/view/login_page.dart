@@ -9,10 +9,12 @@ import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
+import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
+import 'package:edu_token_system_app/feature/setting/view/setting_page.dart';
 import 'package:encrypt/encrypt.dart' as encrypt_pkg;
 
 import 'package:flutter/foundation.dart';
@@ -39,10 +41,10 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<String?> getSerialNo() async {
     try {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final deviceInfo = DeviceInfoPlugin();
 
       if (Platform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        final androidInfo = await deviceInfo.androidInfo;
         return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
@@ -110,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _attemptLogin() async {
-    final _db = MssqlConnection.getInstance();
+    final db = MssqlConnection.getInstance();
     final username = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -128,12 +130,12 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      int retry = 0;
+      var retry = 0;
       const maxRetries = 1;
 
       while (retry < maxRetries) {
         try {
-          await _db.connect(
+          await db.connect(
             ip: '192.168.7.3',
             port: '4914',
             databaseName: 'eduConnectionDB',
@@ -150,13 +152,13 @@ class _LoginPageState extends State<LoginPage> {
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-      if (_db.isConnected == false) {
+      if (db.isConnected == false) {
         throw Exception('Connection failed');
       }
       log('Connection attempt finished');
       // Step 1: Query execute karo
       String? jsonResDbList;
-      await _db
+      await db
           .getData(
             "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
           )
@@ -165,22 +167,22 @@ class _LoginPageState extends State<LoginPage> {
           });
 
       // Step 2: decode karo aur model list banao
-      final List<dynamic> decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+      final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
 
       // Step 3: har ek map ko model me convert karo
-      List<DbListsModel> dbLists = decoded
+      final dbLists = decoded
           .map<DbListsModel>(
             (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
           )
           .toList();
 
       // Step 4: ab use kar sakte ho
-      for (var db in dbLists) {
-        print("DefaultDB: ${db.defaultDB}, Alias: ${db.alias}");
+      for (final db in dbLists) {
+        print('DefaultDB: ${db.defaultDB}, Alias: ${db.alias}');
       }
 
       log(
-        'JSON   ${jsonResDbList}',
+        'JSON   $jsonResDbList',
       );
       if (jsonResDbList == null) {
         throw Exception('No databases found');
@@ -225,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
         // Add this check
         await _showErrorDialog(
           'Connection Error',
-          'Failed to connect to database: ${e.toString()}',
+          'Failed to connect to database: $e',
         );
       }
     } finally {
@@ -251,6 +253,21 @@ class _LoginPageState extends State<LoginPage> {
           ),
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<dynamic>(
+                      builder: (context) => const BranchInfoPage(),
+                    ),
+                  ),
+                  icon: Icons.settings.toCustomIcon(
+                    color: AppColors.kCustomBlueColor,
+                    size: 30,
+                  ),
+                ),
+              ),
               SizedBox(height: height * 0.05),
               AutoSizeText(
                 'Edu Token System',
