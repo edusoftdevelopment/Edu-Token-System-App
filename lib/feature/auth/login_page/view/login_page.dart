@@ -201,7 +201,6 @@ class _LoginPageState extends State<LoginPage> {
             databaseName: 'eduConnectionDB',
             username: 'sa',
             password: '2MSZXGYTUOM4',
-            timeoutInSeconds: 15,
           );
           break;
         } catch (e) {
