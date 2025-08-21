@@ -91,7 +91,6 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dbList = await _getDatabsesList();
-
       selectedDatabase = await _getSelectedDatabase();
     });
   }
@@ -253,7 +252,6 @@ class _LoginPageState extends State<LoginPage> {
       if (!loginMatched!) {
         throw Exception('Invalid email or password');
       }
-
 
       // Set runtime values if login successful
       AppConfig.loginId = username;
