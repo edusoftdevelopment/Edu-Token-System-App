@@ -1,37 +1,22 @@
+import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:flutter/material.dart';
-import 'package:edu_token_system_app/Export/export.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BranchInfoPage extends StatefulWidget {
+class BranchInfoPage extends ConsumerStatefulWidget {
   const BranchInfoPage({super.key});
 
   @override
-  State<BranchInfoPage> createState() => _BranchInfoPageState();
+  ConsumerState<BranchInfoPage> createState() => _BranchInfoPageState();
 }
 
-class _BranchInfoPageState extends State<BranchInfoPage> {
-  // Data for each branch
-  Map<String, Map<String, String>> branchData = {
-    '1st Branch': {
-      'server': r'192.168.99.99:4936\instance',
-      'password': 'abcdefghi',
-      'port': '4936',
-    },
-    '2nd Branch': {
-      'server': '',
-      'password': '',
-      'port': '',
-    },
-    '3rd Branch': {
-      'server': '',
-      'password': '',
-      'port': '',
-    },
-  };
-
-  // Function to show dialog for editing branch info
-  void _showEditDialog(String branchKey, String field) {
+class _BranchInfoPageState extends ConsumerState<BranchInfoPage> {
+  //! Function to show dialog for editing branch info
+  void _showEditDialog(
+    String branchKey,
+    String field,
+    Map<String, Map<String, String>> branchData,
+  ) {
     final controller = TextEditingController(
       text: branchData[branchKey]![field] ?? '',
     );
@@ -58,9 +43,10 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
             TextButton(
               child: const Text('Save'),
               onPressed: () {
-                setState(() {
-                  branchData[branchKey]![field] = controller.text;
-                });
+                //! Use Riverpod to update the state
+                ref
+                    .read(branchDataProvider.notifier)
+                    .updateBranchData(branchKey, field, controller.text);
                 Navigator.of(context).pop();
               },
             ),
@@ -72,7 +58,9 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final branchData = ref.watch(branchDataProvider);
     final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: AppColors.kWhite,
       appBar: CustomAppBarEduTokenSystem(
@@ -91,15 +79,15 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               //! 1st Branch
-              _buildBranchCard('1st Branch'),
+              _buildBranchCard('1st Branch', branchData),
               const SizedBox(height: 20),
 
               //! 2nd Branch
-              // _buildBranchCard('2nd Branch'),
+              // _buildBranchCard('2nd Branch', branchData),
               // const SizedBox(height: 20),
 
               //! 3rd Branch
-              // _buildBranchCard('3rd Branch'),
+              // _buildBranchCard('3rd Branch', branchData),
             ],
           ),
         ),
@@ -107,7 +95,10 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
     );
   }
 
-  Widget _buildBranchCard(String branchKey) {
+  Widget _buildBranchCard(
+    String branchKey,
+    Map<String, Map<String, String>> branchData,
+  ) {
     return Card(
       elevation: 4,
       color: AppColors.kWhite,
@@ -139,7 +130,7 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
             _buildInfoRow(
               label: 'Local Server',
               value: branchData[branchKey]!['server']!,
-              onTap: () => _showEditDialog(branchKey, 'server'),
+              onTap: () => _showEditDialog(branchKey, 'server', branchData),
             ),
             const SizedBox(height: 12),
 
@@ -147,7 +138,7 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
             _buildInfoRow(
               label: 'Port',
               value: branchData[branchKey]!['port']!,
-              onTap: () => _showEditDialog(branchKey, 'port'),
+              onTap: () => _showEditDialog(branchKey, 'port', branchData),
             ),
             const SizedBox(height: 12),
 
@@ -155,7 +146,7 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
             _buildInfoRow(
               label: 'Db Password',
               value: branchData[branchKey]!['password']!,
-              onTap: () => _showEditDialog(branchKey, 'password'),
+              onTap: () => _showEditDialog(branchKey, 'password', branchData),
               isPassword: true,
             ),
           ],
@@ -203,5 +194,46 @@ class _BranchInfoPageState extends State<BranchInfoPage> {
         ),
       ],
     );
+  }
+}
+
+//! branch_provider.dart
+
+final branchDataProvider =
+    StateNotifierProvider<BranchDataNotifier, Map<String, Map<String, String>>>(
+      (ref) {
+        return BranchDataNotifier();
+      },
+    );
+
+class BranchDataNotifier
+    extends StateNotifier<Map<String, Map<String, String>>> {
+  BranchDataNotifier()
+    : super({
+        '1st Branch': {
+          'server': r'192.168.99.99:4936\instance',
+          'password': 'abcdefghi',
+          'port': '4936',
+        },
+        '2nd Branch': {
+          'server': '',
+          'password': '',
+          'port': '',
+        },
+        '3rd Branch': {
+          'server': '',
+          'password': '',
+          'port': '',
+        },
+      });
+
+  void updateBranchData(String branchKey, String field, String value) {
+    state = {
+      ...state,
+      branchKey: {
+        ...state[branchKey]!,
+        field: value,
+      },
+    };
   }
 }
