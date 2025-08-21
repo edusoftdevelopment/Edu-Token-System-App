@@ -187,9 +187,8 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      MssqlHelper? conn;
       int retry = 0;
-      const maxRetries = 3;
+      const maxRetries = 1;
 
       while (retry < maxRetries) {
         try {
@@ -211,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-      if (conn == null) {
+      if (_db.isConnected == false) {
         throw Exception('Connection failed');
       }
       log('Connection attempt finished');
@@ -226,7 +225,10 @@ class _LoginPageState extends State<LoginPage> {
           .then((value) {
             jsonResDbList = value;
           });
-      log('${jsonResDbList}' as String);
+      log(
+        'JSONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN   ${jsonResDbList}'
+            as String,
+      );
       if (jsonResDbList == null) {
         throw Exception('No databases found');
       }
