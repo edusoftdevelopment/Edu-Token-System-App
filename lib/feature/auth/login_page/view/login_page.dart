@@ -12,6 +12,7 @@ import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
+import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
@@ -44,6 +45,8 @@ class _LoginPageState extends State<LoginPage> {
   final _mssqlPort = 1433;
   String?
   selectedDatabase; // change if your instance uses a different static port
+  List<LoginInfoModel>? loginInfoList;
+  bool? loginMatched;
 
   Future<String?> getSerialNo() async {
     try {
@@ -88,17 +91,9 @@ class _LoginPageState extends State<LoginPage> {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dbList = await _getDatabsesList();
-      if (dbList.isNotEmpty) {
-        selectedDb = dbList.first; // Set default to first database
-        await _setDatabse(seectedDatabase: selectedDb!.defaultDB!);
-      } else {
-        await _showErrorDialog(
-          'No Databases Found',
-          'Please check your connection or contact support.',
-        );
-      }
+
+      selectedDatabase = await _getSelectedDatabase();
     });
-    final selectedDatabase = _getSelectedDatabase();
   }
 
   @override
@@ -213,27 +208,16 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // Attempt to connect to database
-      var retry = 0;
-      const maxRetries = 1;
-
-      while (retry < maxRetries) {
-        try {
-          await db1.connect(
-            ip: '192.168.7.3',
-            port: '4914',
-            databaseName: selectedDatabase ?? '',
-            username: 'sa',
-            password: '2MSZXGYTUOM4',
-          );
-          break;
-        } catch (e) {
-          retry++;
-          if (retry >= maxRetries) {
-            throw Exception('Failed to connect after $maxRetries attempts: $e');
-          }
-          await Future.delayed(const Duration(seconds: 1));
-        }
+      try {
+        await db1.connect(
+          ip: '192.168.7.3',
+          port: '4914',
+          databaseName: selectedDatabase ?? '',
+          username: 'sa',
+          password: '2MSZXGYTUOM4',
+        );
+      } catch (e) {
+        throw Exception('Failed to connect: $e');
       }
 
       if (!db1.isConnected) {
@@ -250,9 +234,26 @@ class _LoginPageState extends State<LoginPage> {
         );
         loginInfo = result;
         log('Login Info: $loginInfo');
+
+        List<dynamic> decoded2 = jsonDecode(loginInfo) as List<dynamic>;
+        loginInfoList = decoded2
+            .map<LoginInfoModel>(
+              (json) => LoginInfoModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
       } catch (e) {
         throw Exception('Failed to fetch login info: $e');
       }
+
+      loginMatched = isLoginMatch(
+        loginInfoList: loginInfoList!,
+        inputUsername: _emailController.text,
+        inputPassword: _passwordController.text,
+      );
+      if (!loginMatched!) {
+        throw Exception('Invalid email or password');
+      }
+
 
       // Set runtime values if login successful
       AppConfig.loginId = username;
@@ -275,9 +276,69 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  /// Returns true if any entry in the list matches the provided credentials.
+  /// Username comparison is case-insensitive (like your Java code), password is case-sensitive.
+  bool isLoginMatch({
+    required List<LoginInfoModel> loginInfoList,
+    required String inputUsername,
+    required String inputPassword,
+  }) {
+    final u = inputUsername.trim().toLowerCase();
+    final p = inputPassword; // case-sensitive
+
+    for (final item in loginInfoList) {
+      final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
+      final decPass = vbDecrypt(item.password);
+
+      if (decUser == u && decPass == p) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String vbDecrypt(String? input) {
+    if (input == null) return '';
+
+    // Agar '€' mojood ho toh us se pehle ka part lo
+    int idx = input.indexOf('€');
+    String part = idx >= 0 ? input.substring(0, idx) : input;
+
+    if (part.isEmpty) return '';
+
+    final buffer = StringBuffer();
+    const int key = 3; // XOR key
+
+    for (int i = 0; i < part.length; i++) {
+      int code = part.codeUnitAt(i);
+      int decoded = code ^ key;
+      buffer.writeCharCode(decoded);
+    }
+
+    return buffer.toString();
+  }
+
+  bool matchesCredentials({
+    required String inputUsername,
+    required String inputPassword,
+    required String dbLoginName, // value from DB row's LoginName
+    required String dbPassword, // value from DB row's Password
+  }) {
+    final decryptedUsername = vbDecrypt(dbLoginName);
+    final decryptedPassword = vbDecrypt(dbPassword);
+
+    final usernameMatches =
+        inputUsername.trim().toLowerCase() ==
+        decryptedUsername.trim().toLowerCase();
+    final passwordMatches = inputPassword == decryptedPassword;
+
+    return usernameMatches && passwordMatches;
+  }
+
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
     final key = 'selectedDb';
+    await prefs.setString(key, seectedDatabase);
   }
 
   Future<String> _getSelectedDatabase() async {
@@ -408,6 +469,7 @@ class _LoginPageState extends State<LoginPage> {
                 onSelected: (value) {
                   setState(() {
                     selectedDb = value;
+
                     _setDatabse(seectedDatabase: value.defaultDB!);
                   });
                 },
