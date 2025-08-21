@@ -14,8 +14,6 @@ import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
-import 'package:edu_token_system_app/feature/setting/view/setting_page.dart';
-
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 // Replaced MySQL package with MSSQL package
 import 'package:mssql_connection/mssql_connection.dart';
