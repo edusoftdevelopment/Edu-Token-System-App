@@ -9,7 +9,7 @@ import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
-import 'package:edu_token_system_app/core/extension/extension.dart';
+import 'package:edu_token_system_app/core/model/db_lists_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
@@ -82,67 +82,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // VBDecrypt ported from Java: XOR each char with 3, strip after '€'
-  String vbDecrypt(String? input) {
-    if (input == null || input.isEmpty) return '';
-    final idx = input.indexOf('€');
-    if (idx >= 0) {
-      input = input.substring(0, idx);
-    }
-    final sb = StringBuffer();
-    const power = 3;
-    for (var i = 0; i < input.length; i++) {
-      final ascii = input.codeUnitAt(i);
-      final result = ascii ^ power;
-      sb.writeCharCode(result);
-    }
-    return sb.toString();
-  }
-
-  // AES decrypt (attempt) - handles conversion to Uint8List to avoid type errors
-  String? tryAesDecrypt(String base64Cipher, String key, String iv) {
-    try {
-      if (base64Cipher.isEmpty) return '';
-
-      final cipherBytes = Uint8List.fromList(base64.decode(base64Cipher));
-
-      // prepare key bytes (ensure length 16/24/32)
-      final List<int> rawKeyBytes = utf8.encode(key);
-      final keyBytesList =
-          (rawKeyBytes.length == 16 ||
-              rawKeyBytes.length == 24 ||
-              rawKeyBytes.length == 32)
-          ? rawKeyBytes
-          : (rawKeyBytes + List<int>.filled(32 - rawKeyBytes.length, 0))
-                .sublist(0, 32);
-      final keyBytes = Uint8List.fromList(keyBytesList);
-
-      // prepare iv bytes (ensure length 16)
-      final List<int> rawIvBytes = utf8.encode(iv);
-      final ivBytesList = rawIvBytes.length >= 16
-          ? rawIvBytes.sublist(0, 16)
-          : (rawIvBytes + List<int>.filled(16 - rawIvBytes.length, 0));
-      final ivBytes = Uint8List.fromList(ivBytesList);
-
-      final encrypter = encrypt_pkg.Encrypter(
-        encrypt_pkg.AES(
-          encrypt_pkg.Key(keyBytes),
-          mode: encrypt_pkg.AESMode.cbc,
-        ),
-      );
-      final ivObj = encrypt_pkg.IV(ivBytes);
-
-      final decryptedBytes = encrypter.decryptBytes(
-        encrypt_pkg.Encrypted(cipherBytes),
-        iv: ivObj,
-      );
-      return utf8.decode(decryptedBytes);
-    } catch (e) {
-      if (kDebugMode) print('AES decrypt failed: $e');
-      return null;
-    }
-  }
-
   // Centralized error dialog + state cleanup
   Future<void> _showErrorDialog(String title, String message) async {
     setState(() {
@@ -189,9 +128,8 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      MssqlHelper? conn;
       int retry = 0;
-      const maxRetries = 3;
+      const maxRetries = 1;
 
       while (retry < maxRetries) {
         try {
@@ -212,13 +150,11 @@ class _LoginPageState extends State<LoginPage> {
           await Future.delayed(const Duration(seconds: 1));
         }
       }
-      if (conn == null) {
+      if (_db.isConnected == false) {
         throw Exception('Connection failed');
       }
       log('Connection attempt finished');
-
-      // query logic here
-      // Step 2: Get available databases
+      // Step 1: Query execute karo
       String? jsonResDbList;
       await _db
           .getData(
@@ -227,7 +163,25 @@ class _LoginPageState extends State<LoginPage> {
           .then((value) {
             jsonResDbList = value;
           });
-      log('${jsonResDbList}' as String);
+
+      // Step 2: decode karo aur model list banao
+      final List<dynamic> decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+
+      // Step 3: har ek map ko model me convert karo
+      List<DbListsModel> dbLists = decoded
+          .map<DbListsModel>(
+            (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+
+      // Step 4: ab use kar sakte ho
+      for (var db in dbLists) {
+        print("DefaultDB: ${db.defaultDB}, Alias: ${db.alias}");
+      }
+
+      log(
+        'JSON   ${jsonResDbList}',
+      );
       if (jsonResDbList == null) {
         throw Exception('No databases found');
       }
@@ -245,16 +199,16 @@ class _LoginPageState extends State<LoginPage> {
       final encryptedPassword = encrypt_pkg.Encrypted.fromBase64(
         AppConfig.aesKey,
       );
-      final decryptedPassword = tryAesDecrypt(
-        encryptedPassword.base64,
-        AppConfig.aesKey,
-        AppConfig.aesIv,
-      );
+      // final decryptedPassword = tryAesDecrypt(
+      //   encryptedPassword.base64,
+      //   AppConfig.aesKey,
+      //   AppConfig.aesIv,
+      // );
 
-      if (decryptedPassword == null ||
-          decryptedPassword != vbDecrypt(password)) {
-        throw Exception('Invalid credentials');
-      }
+      // if (decryptedPassword == null ||
+      //     decryptedPassword != vbDecrypt(password)) {
+      //   throw Exception('Invalid credentials');
+      // }
 
       // Step 5: Set runtime values
       AppConfig.loginId = username;
