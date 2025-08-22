@@ -41,9 +41,6 @@ dependencies:
   flutter_riverpod: ^2.6.1
   esc_pos_utils: ^1.1.0
   print_bluetooth_thermal: ^1.1.6
-  # blue_print_pos: ^0.0.14
-
-  # mssql_connection: ^2.0.2
 
 
 
