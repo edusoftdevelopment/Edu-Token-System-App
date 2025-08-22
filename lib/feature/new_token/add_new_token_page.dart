@@ -3,21 +3,28 @@ import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:edu_token_system_app/feature/token_history/view/token_history.dart';
+import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
-class AddNewTokenPage extends StatefulWidget {
+class AddNewTokenPage extends ConsumerStatefulWidget {
   const AddNewTokenPage({super.key});
 
   @override
-  State<AddNewTokenPage> createState() => _AddNewTokenPageState();
+  ConsumerState<AddNewTokenPage> createState() => _AddNewTokenPageState();
 }
 
-class _AddNewTokenPageState extends State<AddNewTokenPage> {
+class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
   String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
   DateTime? currentDateTime;
+  String? date;
+  String? time;
+  bool busy = false;
+  String? connectedMac;
 
   @override
   void initState() {
@@ -33,6 +40,145 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
   void dispose() {
     super.dispose();
     _numberController.dispose();
+  }
+
+  Future<void> _showErrorDialog(String title, String message) async {
+    if (!mounted) return;
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false, // User must tap button to close dialog
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF203a43),
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
+        actions: [
+          TextButton(
+            child: const Text(
+              'Settings',
+              style: TextStyle(color: AppColors.kWhite),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<BluetoothDevicesPage>(
+                  builder: (context) {
+                    return BluetoothDevicesPage();
+                  },
+                ),
+              ).then((_) => Navigator.of(context).pop());
+            },
+          ),
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.kWhite),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(); // This will close the dialog
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<List<int>> _buildBytes() async {
+    final CapabilityProfile profile = await CapabilityProfile.load();
+    final Generator generator = Generator(PaperSize.mm80, profile);
+
+    List<int> bytes = [];
+
+    // Top stars line
+    bytes += generator.text(
+      '********************************',
+      styles: PosStyles(bold: true, align: PosAlign.center),
+    );
+
+    // Big number in center (9800)
+    bytes += generator.text(
+      '9800',
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
+
+    // Bottom stars line
+    bytes += generator.text(
+      '********************************',
+      styles: PosStyles(bold: true, align: PosAlign.center),
+    );
+
+    // Parking title
+    bytes += generator.text(
+      'Fun Forest car Parking',
+      styles: PosStyles(align: PosAlign.center),
+    );
+
+    bytes += generator.feed(1);
+
+    // Date & Time
+    bytes += generator.text(
+      'Date:${date}  Time:${time}',
+      styles: PosStyles(align: PosAlign.left),
+    );
+
+    bytes += generator.text(
+      'Price: 70 Rs   Ticket: SR-2892',
+      styles: PosStyles(align: PosAlign.left),
+    );
+
+    bytes += generator.feed(1);
+
+    // Footer text
+    bytes += generator.text(
+      'Keep this ticket for exit.',
+      styles: PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'Thanks for visiting!',
+      styles: PosStyles(align: PosAlign.center),
+    );
+
+    bytes += generator.cut();
+    return bytes;
+  }
+
+  Future<void> _printText() async {
+    final connectedMacAddress = ref.watch(connectedMacProvider);
+    if (connectedMacAddress == null) {
+      await _showErrorDialog(
+        'Message',
+        'No printer connected! Please connect first from the settings.',
+      );
+      return;
+    }
+
+    setState(() => busy = true);
+    try {
+      final bytes = await _buildBytes();
+      final res = await PrintBluetoothThermal.writeBytes(bytes);
+      debugPrint('writeBytes result: $res');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Print sent')));
+    } catch (e) {
+      debugPrint('Print error: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Print error: $e')));
+    } finally {
+      setState(() => busy = false);
+    }
   }
 
   @override
@@ -59,6 +205,22 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                   color: AppColors.kWhite,
                   fontWeight: FontWeight.bold,
                 ),
+                actions: [
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return BluetoothDevicesPage();
+                          },
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.settings),
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                ],
                 size: size,
               ),
               body: Column(
@@ -78,8 +240,8 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                       }
                       final now = snapshot.data!;
                       currentDateTime = now;
-                      final date = '${now.day}-${now.month}-${now.year}';
-                      final time =
+                      date = '${now.day}-${now.month}-${now.year}';
+                      time =
                           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
                       return Row(
@@ -271,16 +433,7 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                   const Spacer(),
                   CustomButton(
                     name: 'Save',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<ThermalPrintFromMedium>(
-                          builder: (context) {
-                            return const ThermalPrintFromMedium();
-                          },
-                        ),
-                      );
-                    },
+                    onPressed: () => _printText(),
                   ),
                   const SizedBox(height: 50),
                 ],
