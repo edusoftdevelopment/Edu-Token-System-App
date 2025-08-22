@@ -274,9 +274,9 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute<TokenHistoryPage>(
+                        MaterialPageRoute<ThermalPrintFromMedium>(
                           builder: (context) {
-                            return const TokenHistoryPage();
+                            return const ThermalPrintFromMedium();
                           },
                         ),
                       );
