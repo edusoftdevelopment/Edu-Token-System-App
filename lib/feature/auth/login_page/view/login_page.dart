@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
@@ -35,7 +36,6 @@ class _LoginPageState extends State<LoginPage> {
   List<DbListsModel> dbList = [];
   DbListsModel? selectedDb;
   bool loadingDbList = false;
-  final _mssqlPort = 1433;
   String?
   selectedDatabase; // change if your instance uses a different static port
   List<LoginInfoModel>? loginInfoList;
@@ -109,11 +109,21 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false, // User must tap button to close dialog
       builder: (BuildContext context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        backgroundColor: const Color(0xFF203a43),
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
         actions: [
           TextButton(
-            child: const Text('OK'),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: AppColors.kWhite),
+            ),
             onPressed: () {
               Navigator.of(context).pop(); // This will close the dialog
             },
@@ -124,62 +134,77 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<List<DbListsModel>> _getDatabsesList() async {
-    setState(() {
-      loadingDbList = true;
-    });
-    final db = MssqlConnection.getInstance();
-    const maxRetries = 1;
-    var retry = 0;
+    try {
+      setState(() {
+        loadingDbList = true;
+      });
+      final db = MssqlConnection.getInstance();
+      final conn = MssqlHelper();
+      const maxRetries = 1;
+      var retry = 0;
 
-    while (retry < maxRetries) {
-      try {
-        await db.connect(
-          ip: AppConfig.dbHost,
-          port: AppConfig.dbPort,
-          databaseName: AppConfig.initialDatabase,
-          username: AppConfig.dbUser,
-          password: AppConfig.dbPassword,
-        );
-        break;
-      } catch (e) {
-        retry++;
-        if (retry >= maxRetries) {
-          throw Exception('Failed to connect after $maxRetries attempts: $e');
+      while (retry < maxRetries) {
+        try {
+          await conn.connect(
+            ip: AppConfig.dbHost,
+            port: AppConfig.dbPort,
+            username: AppConfig.dbUser,
+            password: AppConfig.dbPassword,
+            databaseName: AppConfig.initialDatabase,
+          );
+
+          break;
+        } catch (e) {
+          retry++;
+          if (retry >= maxRetries) {
+            throw Exception('Failed to connect after $maxRetries attempts: $e');
+          }
+
+          await Future.delayed(const Duration(seconds: 1));
         }
-
-        await Future.delayed(const Duration(seconds: 1));
       }
-    }
-    if (db.isConnected == false) {
-      throw Exception('Connection failed');
-    }
-    log('Connection attempt finished');
-    // Step 1: Query execute karo
-    String? jsonResDbList;
-    await db
-        .getData(
-          "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
-        )
-        .then((value) {
-          jsonResDbList = value;
-        });
+      if (db.isConnected == false) {
+        throw Exception('Connection failed');
+      }
+      log('Connection attempt finished');
+      String? jsonResDbList;
+      try {
+        jsonResDbList = await conn.query(
+          queryStrig:
+              "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
+        );
+      } catch (e) {
+        throw Exception('Failed to fetch databases List: $e');
+      }
 
-    // Step 2: decode karo aur model list banao
-    final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+      // Step 2: decode karo aur model list banao
+      final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
 
-    // Step 3: har ek map ko model me convert karo
-    final dbLists = decoded
-        .map<DbListsModel>(
-          (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
-        )
-        .toList();
-    if (jsonResDbList == null) {
-      throw Exception('No databases found');
+      // Step 3: har ek map ko model me convert karo
+      final dbLists = decoded
+          .map<DbListsModel>(
+            (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+      if (jsonResDbList == null) {
+        throw Exception('No databases found');
+      }
+      await conn.close();
+      setState(() {
+        loadingDbList = false;
+      });
+      return dbLists;
+    } catch (e) {
+      if (mounted) {
+        if (selectedDatabase == null || selectedDatabase == 'Select Database') {
+          await _showErrorDialog(
+            'Error Accurred while fetching databases',
+            '${e.toString()}',
+          );
+        }
+      }
+      return [];
     }
-    setState(() {
-      loadingDbList = false;
-    });
-    return dbLists;
   }
 
   Future<void> _attemptLogin() async {
@@ -500,7 +525,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<void>(
                         builder: (context) => const AddNewTokenPage(),
                       ),
                     );

@@ -25,12 +25,13 @@ class MssqlHelper {
   }
 
   /// Returns result as String so callers can use column names.
-  Future<String> query({required String queryStrig}) async{
+  Future<String> query({required String queryStrig}) async {
     return _db.getData(
       queryStrig, // Replace with your actual query
     );
   }
 
-
-
+  Future<bool> isConnected() async {
+    return _db.isConnected;
+  }
 }
