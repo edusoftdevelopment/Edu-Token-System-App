@@ -93,13 +93,21 @@ class _ThermalPrintFromMediumState extends State<ThermalPrintFromMedium> {
     }
   }
 
-  Future<List<int>> _buildBytes(String text) async {
+  Future<List<int>> _buildBytes() async {
     final CapabilityProfile profile = await CapabilityProfile.load();
     final Generator generator = Generator(PaperSize.mm80, profile);
 
     List<int> bytes = [];
+
+    // Top stars line
     bytes += generator.text(
-      'My Shop',
+      '********************************',
+      styles: PosStyles(bold: true, align: PosAlign.center),
+    );
+
+    // Big number in center (9800)
+    bytes += generator.text(
+      '9800',
       styles: PosStyles(
         align: PosAlign.center,
         bold: true,
@@ -107,18 +115,70 @@ class _ThermalPrintFromMediumState extends State<ThermalPrintFromMedium> {
         width: PosTextSize.size2,
       ),
     );
-    bytes += generator.hr();
 
-    final lines = text.split('\n');
-    for (final l in lines) {
-      bytes += generator.text(l);
-    }
-
-    bytes += generator.feed(2);
+    // Bottom stars line
     bytes += generator.text(
-      'Powered by Flutter',
+      '********************************',
+      styles: PosStyles(bold: true, align: PosAlign.center),
+    );
+
+    // Parking title
+    bytes += generator.text(
+      'Fun Forest car Parking',
       styles: PosStyles(align: PosAlign.center),
     );
+
+    bytes += generator.feed(1);
+
+    // Date & Time
+    bytes += generator.text(
+      'Date: 2025-07-27  Time: 09:29 PM',
+      styles: PosStyles(align: PosAlign.left),
+    );
+
+    // bytes += generator.row([
+    //   PosColumn(
+    //     text: 'Date: 2025-07-27',
+    //     width: 5,
+    //     styles: PosStyles(align: PosAlign.left),
+    //   ),
+    //   PosColumn(
+    //     text: 'Time: 09:29 PM',
+    //     width: 7,
+    //     styles: PosStyles(align: PosAlign.right),
+    //   ),
+    // ]);
+
+    // Price & Ticket
+    bytes += generator.text(
+      'Price: 70 Rs   Ticket: SR-2892',
+      styles: PosStyles(align: PosAlign.left),
+    );
+    // bytes += generator.row([
+    //   PosColumn(
+    //     text: 'Price: 70 Rs',
+    //     width: 6,
+    //     styles: PosStyles(align: PosAlign.left),
+    //   ),
+    //   PosColumn(
+    //     text: 'Ticket: SR-2892',
+    //     width: 6,
+    //     styles: PosStyles(align: PosAlign.right),
+    //   ),
+    // ]);
+
+    bytes += generator.feed(1);
+
+    // Footer text
+    bytes += generator.text(
+      'Keep this ticket for exit.',
+      styles: PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'Thanks for visiting!',
+      styles: PosStyles(align: PosAlign.center),
+    );
+
     bytes += generator.cut();
     return bytes;
   }
@@ -133,7 +193,7 @@ class _ThermalPrintFromMediumState extends State<ThermalPrintFromMedium> {
 
     setState(() => busy = true);
     try {
-      final bytes = await _buildBytes(_textController.text);
+      final bytes = await _buildBytes();
       final res = await PrintBluetoothThermal.writeBytes(bytes);
       debugPrint('writeBytes result: $res');
       ScaffoldMessenger.of(

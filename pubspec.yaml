@@ -42,9 +42,6 @@ dependencies:
 
   esc_pos_utils: ^1.1.0
   print_bluetooth_thermal: ^1.1.6
-  flutter_blue_plus: ^1.35.5
-
-  # mssql_connection: ^2.0.2
 
 
 
