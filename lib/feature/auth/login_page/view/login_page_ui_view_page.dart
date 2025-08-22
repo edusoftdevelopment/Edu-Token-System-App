@@ -84,8 +84,6 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 SizedBox(height: height * 0.05),
 
-                Container(),
-
                 ///! App Title
                 AutoSizeText(
                   'Edu Token System',

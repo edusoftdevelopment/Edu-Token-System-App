@@ -38,6 +38,9 @@ dependencies:
   mysql1: 
   mssql_connection: ^2.0.2
   shared_preferences: ^2.5.3
+  flutter_riverpod: ^2.6.1
+  # blue_print_pos: ^0.0.14
+
   # mssql_connection: ^2.0.2
 
 
@@ -53,6 +56,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   #! Using Better code analysis
   very_good_analysis: ^9.0.0
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

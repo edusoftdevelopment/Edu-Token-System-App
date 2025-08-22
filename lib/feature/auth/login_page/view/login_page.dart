@@ -6,19 +6,18 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
-import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
+import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
+import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:edu_token_system_app/feature/auth/login_page/widgets/resolve_sql_instance_port.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
+import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
-import 'package:encrypt/encrypt.dart' as encrypt_pkg;
-
-import 'package:flutter/foundation.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-// Replaced MySQL package with MSSQL package
 import 'package:mssql_connection/mssql_connection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,16 +32,21 @@ class _LoginPageState extends State<LoginPage> {
   String authenticationPass = 'true';
   String? _serialNo;
   bool _isLoading = false;
-
-  final _mssqlPort =
-      1433; // change if your instance uses a different static port
+  List<DbListsModel> dbList = [];
+  DbListsModel? selectedDb;
+  bool loadingDbList = false;
+  final _mssqlPort = 1433;
+  String?
+  selectedDatabase; // change if your instance uses a different static port
+  List<LoginInfoModel>? loginInfoList;
+  bool? loginMatched;
 
   Future<String?> getSerialNo() async {
     try {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final deviceInfo = DeviceInfoPlugin();
 
       if (Platform.isAndroid) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        final androidInfo = await deviceInfo.androidInfo;
         return androidInfo.id; // Ye Android ID hai, permission nahi chahiye
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
@@ -70,8 +74,18 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchSerialNumber();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dbList = await _getDatabsesList();
+
+      await _fetchSerialNumber();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      selectedDatabase = await _getSelectedDatabase();
     });
   }
 
@@ -109,8 +123,67 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Future<List<DbListsModel>> _getDatabsesList() async {
+    setState(() {
+      loadingDbList = true;
+    });
+    final db = MssqlConnection.getInstance();
+    const maxRetries = 1;
+    var retry = 0;
+
+    while (retry < maxRetries) {
+      try {
+        await db.connect(
+          ip: AppConfig.dbHost,
+          port: AppConfig.dbPort,
+          databaseName: AppConfig.initialDatabase,
+          username: AppConfig.dbUser,
+          password: AppConfig.dbPassword,
+        );
+        break;
+      } catch (e) {
+        retry++;
+        if (retry >= maxRetries) {
+          throw Exception('Failed to connect after $maxRetries attempts: $e');
+        }
+
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+    if (db.isConnected == false) {
+      throw Exception('Connection failed');
+    }
+    log('Connection attempt finished');
+    // Step 1: Query execute karo
+    String? jsonResDbList;
+    await db
+        .getData(
+          "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
+        )
+        .then((value) {
+          jsonResDbList = value;
+        });
+
+    // Step 2: decode karo aur model list banao
+    final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+
+    // Step 3: har ek map ko model me convert karo
+    final dbLists = decoded
+        .map<DbListsModel>(
+          (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
+        )
+        .toList();
+    if (jsonResDbList == null) {
+      throw Exception('No databases found');
+    }
+    setState(() {
+      loadingDbList = false;
+    });
+    return dbLists;
+  }
+
   Future<void> _attemptLogin() async {
-    final _db = MssqlConnection.getInstance();
+    final db1 = MssqlConnection.getInstance();
     final username = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -128,112 +201,148 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      int retry = 0;
-      const maxRetries = 1;
-
-      while (retry < maxRetries) {
-        try {
-          await _db.connect(
-            ip: '192.168.7.3',
-            port: '4914',
-            databaseName: 'eduConnectionDB',
-            username: 'sa',
-            password: '2MSZXGYTUOM4',
-          );
-          break;
-        } catch (e) {
-          retry++;
-          if (retry >= maxRetries) {
-            throw Exception('Failed to connect after $maxRetries attempts: $e');
-          }
-
-          await Future.delayed(const Duration(seconds: 1));
-        }
-      }
-      if (_db.isConnected == false) {
-        throw Exception('Connection failed');
-      }
-      log('Connection attempt finished');
-      // Step 1: Query execute karo
-      String? jsonResDbList;
-      await _db
-          .getData(
-            "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
-          )
-          .then((value) {
-            jsonResDbList = value;
-          });
-
-      // Step 2: decode karo aur model list banao
-      final List<dynamic> decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
-
-      // Step 3: har ek map ko model me convert karo
-      List<DbListsModel> dbLists = decoded
-          .map<DbListsModel>(
-            (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
-          )
-          .toList();
-
-      // Step 4: ab use kar sakte ho
-      for (var db in dbLists) {
-        print("DefaultDB: ${db.defaultDB}, Alias: ${db.alias}");
+      try {
+        await db1.connect(
+          ip: AppConfig.dbHost,
+          port: AppConfig.dbPort,
+          databaseName: selectedDatabase ?? '',
+          username: AppConfig.dbUser,
+          password: AppConfig.dbPassword,
+        );
+      } catch (e) {
+        throw Exception('Failed to connect: $e');
       }
 
-      log(
-        'JSON   ${jsonResDbList}',
+      if (!db1.isConnected) {
+        throw Exception('Connection failed - database is not connected');
+      }
+
+      log('2nd Connection established successfully');
+
+      //! get login info
+      String? loginInfo;
+      try {
+        final result = await db1.getData(
+          'Select LoginId, LoginInfo.EmployeeCode, LoginName, Password, StopNegativeKOT, Employees.EmployeeName From LoginInfo inner join Employees on LoginInfo.EmployeeCode=Employees.EmployeeCode',
+        );
+        loginInfo = result;
+        log('Login Info: $loginInfo');
+
+        final decoded2 = jsonDecode(loginInfo) as List<dynamic>;
+        loginInfoList = decoded2
+            .map<LoginInfoModel>(
+              (json) => LoginInfoModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      } catch (e) {
+        throw Exception('Failed to fetch login info: $e');
+      }
+
+      loginMatched = isLoginMatch(
+        loginInfoList: loginInfoList!,
+        inputUsername: _emailController.text,
+        inputPassword: _passwordController.text,
       );
-      if (jsonResDbList == null) {
-        throw Exception('No databases found');
+      if (!loginMatched!) {
+        throw Exception('Invalid email or password');
       }
 
-      // Step 3: Check if initialDatabase exists
-      // final initialDbExists = resDbList.any(
-      //   (db) => db['name'].toString().toLowerCase() == 'edu2k8',
-      // );
-
-      // if (!initialDbExists) {
-      //   throw Exception('Initial database EDU2K8 not found');
-      // }
-
-      // Step 4: Attempt login
-      final encryptedPassword = encrypt_pkg.Encrypted.fromBase64(
-        AppConfig.aesKey,
-      );
-      // final decryptedPassword = tryAesDecrypt(
-      //   encryptedPassword.base64,
-      //   AppConfig.aesKey,
-      //   AppConfig.aesIv,
-      // );
-
-      // if (decryptedPassword == null ||
-      //     decryptedPassword != vbDecrypt(password)) {
-      //   throw Exception('Invalid credentials');
-      // }
-
-      // Step 5: Set runtime values
+      // Set runtime values if login successful
       AppConfig.loginId = username;
-      AppConfig.employeeName = username; // Assuming username is employee name
-      AppConfig.currentDatabase = 'EDU2K8';
+      AppConfig.employeeName = username;
 
-      // Navigate to AddNewTokenPage
+      // TODO: Add navigation after successful login
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const AddNewTokenPage()),
+        MaterialPageRoute(
+          builder: (context) => const AddNewTokenPage(),
+        ),
       );
     } catch (e) {
+      log('Login error: $e'); // Add logging
       if (mounted) {
-        // Add this check
         await _showErrorDialog(
-          'Connection Error',
-          'Failed to connect to database: ${e.toString()}',
+          'Login Error',
+          e.toString(),
         );
       }
     } finally {
       if (mounted) {
-        // Add this check
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// Returns true if any entry in the list matches the provided credentials.
+
+  bool isLoginMatch({
+    required List<LoginInfoModel> loginInfoList,
+    required String inputUsername,
+    required String inputPassword,
+  }) {
+    final u = inputUsername.trim().toLowerCase();
+    final p = inputPassword; // case-sensitive
+
+    for (final item in loginInfoList) {
+      final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
+      final decPass = vbDecrypt(item.password);
+
+      if (decUser == u && decPass == p) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String vbDecrypt(String? input) {
+    if (input == null) return '';
+
+    // Agar '€' mojood ho toh us se pehle ka part lo
+    final idx = input.indexOf('€');
+    final part = idx >= 0 ? input.substring(0, idx) : input;
+
+    if (part.isEmpty) return '';
+
+    final buffer = StringBuffer();
+    const key = 3; // XOR key
+
+    for (var i = 0; i < part.length; i++) {
+      final code = part.codeUnitAt(i);
+      final decoded = code ^ key;
+      buffer.writeCharCode(decoded);
+    }
+
+    return buffer.toString();
+  }
+
+  bool matchesCredentials({
+    required String inputUsername,
+    required String inputPassword,
+    required String dbLoginName, // value from DB row's LoginName
+    required String dbPassword, // value from DB row's Password
+  }) {
+    final decryptedUsername = vbDecrypt(dbLoginName);
+    final decryptedPassword = vbDecrypt(dbPassword);
+
+    final usernameMatches =
+        inputUsername.trim().toLowerCase() ==
+        decryptedUsername.trim().toLowerCase();
+    final passwordMatches = inputPassword == decryptedPassword;
+
+    return usernameMatches && passwordMatches;
+  }
+
+  Future<void> _setDatabse({required String seectedDatabase}) async {
+    final prefs = await SharedPreferences.getInstance();
+    const key = 'selectedDb';
+    await prefs.setString(key, seectedDatabase);
+  }
+
+  Future<String> _getSelectedDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    const key = 'selectedDb';
+    final selectedDb = prefs.getString(key);
+    return selectedDb ?? 'Select Database'; // Default database if none selected
   }
 
   @override
@@ -251,6 +360,32 @@ class _LoginPageState extends State<LoginPage> {
           ),
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  onPressed: () {
+                    var status = 'No password entered yet';
+                    showDialog<void>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return PasswordDialog(
+                          onPasswordValidated: (isValid) {
+                            setState(() {
+                              status = isValid
+                                  ? 'Password accepted! Access granted.'
+                                  : 'Invalid password. Try again.';
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                  icon: Icons.settings.toCustomIcon(
+                    color: AppColors.kCustomBlueColor,
+                    size: 30,
+                  ),
+                ),
+              ),
               SizedBox(height: height * 0.05),
               AutoSizeText(
                 'Edu Token System',
@@ -292,6 +427,7 @@ class _LoginPageState extends State<LoginPage> {
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
+
               SizedBox(height: height * 0.06),
               CustomTextFormTokenSystem(
                 sameBorder: authenticationPass == 'false',
@@ -330,7 +466,23 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(fontSize: 14, color: AppColors.kDarkRed),
                 ),
               ],
-              SizedBox(height: height * 0.05),
+              SizedBox(height: height * 0.02),
+              CustomDbDropdown(
+                width: width,
+                items: dbList,
+                hintText: loadingDbList
+                    ? 'Loading Databses...'
+                    : selectedDatabase ?? 'Select Database',
+                selectedItem: selectedDb,
+                onSelected: (value) {
+                  setState(() {
+                    selectedDb = value;
+
+                    _setDatabse(seectedDatabase: value.defaultDB!);
+                  });
+                },
+              ),
+              SizedBox(height: height * 0.02),
               // FIXED: now onPressed will call the function (not return it)
               if (_isLoading)
                 CustomButton(
@@ -345,7 +497,14 @@ class _LoginPageState extends State<LoginPage> {
               else
                 CustomButton(
                   name: 'Login In',
-                  onPressed: _attemptLogin,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddNewTokenPage(),
+                      ),
+                    );
+                  },
                 ),
               const SizedBox(height: 24),
               Center(

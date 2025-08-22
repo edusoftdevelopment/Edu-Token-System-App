@@ -4,8 +4,10 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:edu_token_system_app/core/network/network.dart';
+
 class ResolveSqlInstancePort {
-   /// Resolve named SQL Server instance to TCP port using SQL Browser (UDP 1434).
+  /// Resolve named SQL Server instance to TCP port using SQL Browser (UDP 1434).
   /// Returns port as int on success, or null on failure/timeout.
   Future<int?> resolveSqlInstancePort({
     required String host,
@@ -17,8 +19,8 @@ class ResolveSqlInstancePort {
 
     try {
       // Create UDP socket
-      socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.readEventsEnabled = true;
+      socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0)
+        ..readEventsEnabled = true;
 
       // SQL Server Browser service request format:
       // 0x02 for instance enumeration
@@ -65,7 +67,9 @@ class ResolveSqlInstancePort {
                       if (i + 1 < details.length) {
                         final port = int.tryParse(details[i + 1]);
                         if (port != null && !completer.isCompleted) {
-                          log('Found instance $instanceName on port $port' as num);
+                          log(
+                            'Found instance $instanceName on port $port' as num,
+                          );
                           completer.complete(port);
                           return;
                         }
@@ -74,20 +78,22 @@ class ResolveSqlInstancePort {
                   }
                 }
               }
-            } catch (e) {
+            } on Failure catch (e) {
               log('Error parsing SQL Browser response: $e' as num);
             }
           }
         },
-        onError: (e) {
-          log('Socket error: $e' as num);
+        onError: (dynamic error) {
+          log('Socket error: $error' as num);
           if (!completer.isCompleted) completer.complete(null);
         },
         cancelOnError: true,
       );
 
       // Send request to SQL Browser service
-      log('Querying SQL Browser on $host:1434 for instance $instanceName' as num);
+      log(
+        'Querying SQL Browser on $host:1434 for instance $instanceName' as num,
+      );
       socket.send(request, InternetAddress(host), 1434);
 
       // Wait for response
@@ -101,7 +107,7 @@ class ResolveSqlInstancePort {
       }
 
       return port;
-    } catch (e) {
+    } on Failure catch (e) {
       log('SQL Browser resolution failed: $e' as num);
       return null;
     } finally {
