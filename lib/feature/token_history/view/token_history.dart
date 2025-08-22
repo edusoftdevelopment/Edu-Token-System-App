@@ -1,8 +1,9 @@
-import 'dart:typed_data';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
-import 'package:esc_pos_utils/esc_pos_utils.dart';
+
+
 
 class ThermalPrintFromMedium extends StatefulWidget {
   const ThermalPrintFromMedium({Key? key}) : super(key: key);
@@ -41,7 +42,7 @@ class _ThermalPrintFromMediumState extends State<ThermalPrintFromMedium> {
   Future<void> _loadPaired() async {
     setState(() => busy = true);
     try {
-      // pairedBluetooths returns List<BluetoothInfo> according to package
+      // pairedBluetooth returns List<BluetoothInfo> according to package
       final List<BluetoothInfo>? list =
           await PrintBluetoothThermal.pairedBluetooths;
       setState(() => paired = list ?? []);
