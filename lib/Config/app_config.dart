@@ -7,7 +7,7 @@ class AppConfig {
   static String dbPort = '4914'; // MSSQL default port
   static String dbUser = 'sa'; // SQL Server default username
   static String dbPassword = '2MSZXGYTUOM4';
-  static String initialDatabase = 'EDU2K8';
+  static String initialDatabase = 'eduConnectionDB';
   static String currentDatabase = '';
 
 
