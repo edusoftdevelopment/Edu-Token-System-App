@@ -3,11 +3,11 @@ class AppConfig {
   static String mobileSerialNumber = '';
 
   // Primary DB (fill with your server details)
-  static String dbHost = '192.168.7.3/EDU2K8'; // example IP - change to your server
-  static int dbPort = 1433; // MSSQL default port
+  static String dbHost = '192.168.7.3'; // example IP - change to your server
+  static String dbPort = '4914'; // MSSQL default port
   static String dbUser = 'sa'; // SQL Server default username
   static String dbPassword = '2MSZXGYTUOM4';
-  static String initialDatabase = 'EDU2K8';
+  static String initialDatabase = 'eduConnectionDB';
   static String currentDatabase = '';
 
   // Optional second branch/server (if you use branch selection)

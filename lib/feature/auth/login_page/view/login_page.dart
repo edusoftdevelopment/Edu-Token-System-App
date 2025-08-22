@@ -14,6 +14,7 @@ import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
+import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
 import 'package:edu_token_system_app/feature/setting/view/setting_page.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -38,8 +39,8 @@ class _LoginPageState extends State<LoginPage> {
   DbListsModel? selectedDb;
   bool loadingDbList = false;
   final _mssqlPort = 1433;
-  String selectedDatabase =
-      'Select Database'; // change if your instance uses a different static port
+  String?
+  selectedDatabase; // change if your instance uses a different static port
   List<LoginInfoModel>? loginInfoList;
   bool? loginMatched;
 
@@ -136,11 +137,11 @@ class _LoginPageState extends State<LoginPage> {
     while (retry < maxRetries) {
       try {
         await db.connect(
-          ip: '192.168.7.3',
-          port: '4914',
-          databaseName: 'eduConnectionDB',
-          username: 'sa',
-          password: '2MSZXGYTUOM4',
+          ip: AppConfig.dbHost,
+          port: AppConfig.dbPort,
+          databaseName: AppConfig.initialDatabase,
+          username: AppConfig.dbUser,
+          password: AppConfig.dbPassword,
         );
         break;
       } catch (e) {
@@ -205,11 +206,11 @@ class _LoginPageState extends State<LoginPage> {
     try {
       try {
         await db1.connect(
-          ip: '192.168.7.3',
-          port: '4914',
+          ip: AppConfig.dbHost,
+          port: AppConfig.dbPort,
           databaseName: selectedDatabase ?? '',
-          username: 'sa',
-          password: '2MSZXGYTUOM4',
+          username: AppConfig.dbUser,
+          password: AppConfig.dbPassword,
         );
       } catch (e) {
         throw Exception('Failed to connect: $e');
@@ -252,9 +253,14 @@ class _LoginPageState extends State<LoginPage> {
       // Set runtime values if login successful
       AppConfig.loginId = username;
       AppConfig.employeeName = username;
-      AppConfig.currentDatabase = 'EDU2K8';
 
       // TODO: Add navigation after successful login
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddNewTokenPage(),
+        ),
+      );
     } catch (e) {
       log('Login error: $e'); // Add logging
       if (mounted) {
@@ -271,7 +277,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   /// Returns true if any entry in the list matches the provided credentials.
-  /// Username comparison is case-insensitive (like your Java code), password is case-sensitive.
+
   bool isLoginMatch({
     required List<LoginInfoModel> loginInfoList,
     required String inputUsername,
@@ -339,7 +345,7 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     const key = 'selectedDb';
     final selectedDb = prefs.getString(key);
-    return selectedDb ?? ''; // Default database if none selected
+    return selectedDb ?? 'Select Database'; // Default database if none selected
   }
 
   @override
@@ -494,7 +500,14 @@ class _LoginPageState extends State<LoginPage> {
               else
                 CustomButton(
                   name: 'Login In',
-                  onPressed: _attemptLogin,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddNewTokenPage(),
+                      ),
+                    );
+                  },
                 ),
               const SizedBox(height: 24),
               Center(

@@ -206,6 +206,50 @@ class _AddNewTokenPageState extends State<AddNewTokenPage> {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: AutoSizeText(
+                      'Price',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: height * 0.01),
+                  Container(
+                    width: dropdownWidth,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.kGrey.withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey.shade400,
+                            width: 1.2,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(14),
+                            child: Text('Rs.100'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: height * 0.01),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
                       'Enter Vehicle Number',
                       style: TextStyle(
                         fontSize: 16,
