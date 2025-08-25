@@ -8,6 +8,7 @@ import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
+import 'package:edu_token_system_app/feature/history/view/history_page.dart';
 import 'package:edu_token_system_app/feature/new_token/model/product_model.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -272,6 +273,7 @@ WHERE cat.IsTokan = 1
                   color: AppColors.kWhite,
                   fontWeight: FontWeight.bold,
                 ),
+
                 actions: [
                   InkWell(
                     onTap: () {
@@ -279,7 +281,7 @@ WHERE cat.IsTokan = 1
                         context,
                         MaterialPageRoute(
                           builder: (context) {
-                            return BluetoothDevicesPage();
+                            return HistoryPage();
                           },
                         ),
                       );
