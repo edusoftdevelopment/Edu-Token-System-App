@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
@@ -75,6 +76,8 @@ class _HistoryTokenSystemPageState extends State<HistoryTokenSystemPage> {
               ),
             )
             .toList();
+
+        log('History Data: ${historyData.first}');
         isLoading = false;
       });
     } on Failure catch (e) {
