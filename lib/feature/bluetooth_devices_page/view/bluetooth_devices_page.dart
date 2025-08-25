@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -92,12 +91,19 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
         // Common properties (name & mac used earlier)
         debugPrint('name: ${d.name}');
         debugPrint('mac: ${d.macAdress}');
-        // If package exposes more fields, try printing them (safe using try/catch)
-        try {
-          // Some implementations might have deviceType or type
-          final type = (d as dynamic).deviceType ?? (d as dynamic).type;
-          debugPrint('deviceType: $type');
-        } catch (_) {}
+
+        //       try {
+        //        BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
+        //   BluetoothDevice? device = await bluetooth.;
+        //   if (device != null) {
+        //     print("Device name: ${device.name}");
+        //     print("Device address: ${device.address}");
+        //   } else {
+        //     print("No device connected");
+        //   }
+        // } catch (e) {
+        //   print("Error: $e");
+        // }
       }
     } catch (e) {
       debugPrint('Error loading paired: $e');
