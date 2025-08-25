@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:ffi';
 
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
@@ -10,6 +12,7 @@ import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
 import 'package:edu_token_system_app/feature/history/view/history_page.dart';
 import 'package:edu_token_system_app/feature/new_token/model/product_model.dart';
+import 'package:edu_token_system_app/feature/new_token/model/single_product_model.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -36,6 +39,8 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
   String? currentDatabase;
   List<ProductModel> products = [];
   ProductModel? selectedProduct = null;
+  int? tokenID;
+  SingleProductModel? singleProductModel;
 
   @override
   void initState() {
@@ -91,6 +96,125 @@ WHERE cat.IsTokan = 1
       debugPrint('Query Result: $result');
     } catch (e) {
       _showErrorDialog('Error While Fetching Data', e.toString(), false);
+    } finally {
+      await mssqlHelper.close();
+    }
+  }
+
+  Future<int?> insertTokenInfo({
+    required DateTime tokenDate,
+    required int productID,
+    required int quantity,
+    required double rate,
+    required int userEmployeeID,
+  }) async {
+    try {
+      await mssqlHelper.connect(
+        ip: AppConfig.dbHost,
+        port: AppConfig.dbPort,
+        username: AppConfig.dbUser,
+        password: AppConfig.dbPassword,
+        databaseName: currentDatabase ?? '',
+      );
+    } catch (e) {
+      _showErrorDialog('Error While Connecting Database', e.toString(), false);
+      return null;
+    }
+
+    try {
+      // --- DATE ONLY: "yyyy-MM-dd"
+      final tokenDateStr = tokenDate.toIso8601String().split('T').first;
+
+      final sql =
+          '''
+DECLARE @TokenID BIGINT;
+EXEC sp_TokenInfoInsert
+  @TokenDate = N'$tokenDateStr',
+  @ProductID = $productID,
+  @Quantity = $quantity,
+  @Rate = $rate,
+  @UserEmployeeID = $userEmployeeID,
+  @TokenID = @TokenID OUTPUT;
+SELECT @TokenID AS TokenID;
+''';
+
+      final result = await mssqlHelper.query(
+        queryStrig: sql,
+      );
+
+      debugPrint('InsertTokenInfo raw result: $result');
+
+      final decoded = jsonDecode(result);
+
+      if (decoded is List && decoded.isNotEmpty) {
+        final first = decoded[0] as Map<String, dynamic>;
+        final tokenVal = first['TokenID'];
+
+        if (tokenVal == null) return null;
+
+        final tokenId = tokenVal is int
+            ? tokenVal
+            : int.tryParse(tokenVal.toString());
+
+        tokenID = tokenId;
+        return tokenId;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      _showErrorDialog('Error While Inserting Token', e.toString(), false);
+      return null;
+    } finally {
+      await mssqlHelper.close();
+    }
+  }
+
+  Future<void> _getDataFromTokenID() async {
+    try {
+      // Connect to DB
+      await mssqlHelper.connect(
+        ip: AppConfig.dbHost,
+        port: AppConfig.dbPort,
+        username: AppConfig.dbUser,
+        password: AppConfig.dbPassword,
+        databaseName: currentDatabase ?? '',
+      );
+    } catch (e) {
+      _showErrorDialog('Error While Connecting Database', e.toString(), false);
+    }
+
+    try {
+      // Your query
+      final sql =
+          '''
+SELECT data_TokenInfo.*, gen_ProductsInfo.ProductName
+FROM data_TokenInfo
+INNER JOIN gen_ProductsInfo 
+  ON gen_ProductsInfo.ProductID = data_TokenInfo.ProductID
+WHERE data_TokenInfo.TokenID = $tokenID
+''';
+
+      final result = await mssqlHelper.query(queryStrig: sql);
+
+      log('result: $result');
+
+      final decoded = jsonDecode(result);
+      if (decoded is List && decoded.isNotEmpty) {
+        final first = decoded[0] as Map<String, dynamic>;
+        final tokenModel = SingleProductModel.fromJson(first);
+        log('Token Model: ${tokenModel.toJson()}');
+        singleProductModel = tokenModel;
+        await _printText(
+          quantity: singleProductModel!.quantity.toString(),
+          tokenDate: singleProductModel?.tokenDate ?? '',
+          rate: singleProductModel!.rate.toString(),
+          tokenId: singleProductModel!.tokenID.toString(),
+        );
+      } else {
+        log('No data found for TokenID: $tokenID');
+      }
+    } catch (e) {
+      _showErrorDialog('Error While Fetching Token Info', e.toString(), false);
     } finally {
       await mssqlHelper.close();
     }
@@ -156,7 +280,12 @@ WHERE cat.IsTokan = 1
     );
   }
 
-  Future<List<int>> _buildBytes() async {
+  Future<List<int>> _buildBytes({
+    required String quantity,
+    required String tokenDate,
+    required String rate,
+    required String tokenId,
+  }) async {
     final CapabilityProfile profile = await CapabilityProfile.load();
     final Generator generator = Generator(PaperSize.mm80, profile);
 
@@ -170,7 +299,7 @@ WHERE cat.IsTokan = 1
 
     // Big number in center (9800)
     bytes += generator.text(
-      '9800',
+      quantity,
       styles: const PosStyles(
         align: PosAlign.center,
         bold: true,
@@ -195,12 +324,12 @@ WHERE cat.IsTokan = 1
 
     // Date & Time
     bytes += generator.text(
-      'Date:${date}  Time:${time}',
+      'Date:${tokenDate}  ',
       styles: PosStyles(align: PosAlign.left),
     );
 
     bytes += generator.text(
-      'Price: 70 Rs   Ticket: SR-2892',
+      'Price: $rate Rs   Ticket: $tokenId',
       styles: PosStyles(align: PosAlign.left),
     );
 
@@ -220,7 +349,12 @@ WHERE cat.IsTokan = 1
     return bytes;
   }
 
-  Future<void> _printText() async {
+  Future<void> _printText({
+    required String quantity,
+    required String tokenDate,
+    required String rate,
+    required String tokenId,
+  }) async {
     final connectedMacAddress = ref.watch(connectedMacProvider);
     if (connectedMacAddress == null) {
       await _showErrorDialog(
@@ -233,7 +367,12 @@ WHERE cat.IsTokan = 1
 
     setState(() => busy = true);
     try {
-      final bytes = await _buildBytes();
+      final bytes = await _buildBytes(
+        quantity: quantity,
+        tokenDate: tokenDate,
+        rate: rate,
+        tokenId: tokenId,
+      );
       final res = await PrintBluetoothThermal.writeBytes(bytes);
       debugPrint('writeBytes result: $res');
       ScaffoldMessenger.of(
@@ -506,7 +645,16 @@ WHERE cat.IsTokan = 1
                   const Spacer(),
                   CustomButton(
                     name: 'Save',
-                    onPressed: () => _printText(),
+                    onPressed: () async {
+                      await insertTokenInfo(
+                        tokenDate: DateTime.now(),
+                        productID: selectedProduct!.productID!,
+                        quantity: int.parse(_numberController.text),
+                        rate: selectedProduct!.unitPrice!,
+                        userEmployeeID: 45,
+                      );
+                      await _getDataFromTokenID();
+                    },
                   ),
                   const SizedBox(height: 50),
                 ],
