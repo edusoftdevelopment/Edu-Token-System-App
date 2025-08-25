@@ -15,6 +15,7 @@ class AppConfig {
   static String loginId = '';
   static String employeeCode = '';
   static String employeeName = '';
+  static String loginName = r'\EDU2K8';
 
 
 }

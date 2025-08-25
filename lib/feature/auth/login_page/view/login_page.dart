@@ -263,7 +263,7 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Failed to fetch login info: $e');
       }
 
-      loginMatched = isLoginMatch(
+      loginMatched = await isLoginMatch(
         loginInfoList: loginInfoList!,
         inputUsername: _emailController.text,
         inputPassword: _passwordController.text,
@@ -277,9 +277,9 @@ class _LoginPageState extends State<LoginPage> {
       AppConfig.employeeName = username;
 
       // TODO: Add navigation after successful login
-      Navigator.pushReplacement(
+      await Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
+        MaterialPageRoute<AddNewTokenPage>(
           builder: (context) => const AddNewTokenPage(),
         ),
       );
@@ -299,25 +299,27 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   /// Returns true if any entry in the list matches the provided credentials.
+  Future<bool> isLoginMatch({
+  required List<LoginInfoModel> loginInfoList,
+  required String inputUsername,
+  required String inputPassword,
+}) async {
+  final u = inputUsername.trim().toLowerCase();
+  final p = inputPassword; // case-sensitive
 
-  bool isLoginMatch({
-    required List<LoginInfoModel> loginInfoList,
-    required String inputUsername,
-    required String inputPassword,
-  }) {
-    final u = inputUsername.trim().toLowerCase();
-    final p = inputPassword; // case-sensitive
+  for (final item in loginInfoList) {
+    final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
+    final decPass = vbDecrypt(item.password);
 
-    for (final item in loginInfoList) {
-      final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
-      final decPass = vbDecrypt(item.password);
+    if (decUser == u && decPass == p) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_password', p);
 
-      if (decUser == u && decPass == p) {
-        return true;
-      }
+      return true;
     }
-    return false;
   }
+  return false;
+}
 
   String vbDecrypt(String? input) {
     if (input == null) return '';
@@ -522,14 +524,7 @@ class _LoginPageState extends State<LoginPage> {
               else
                 CustomButton(
                   name: 'Login In',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => const AddNewTokenPage(),
-                      ),
-                    );
-                  },
+                  onPressed:() => _isLoading ? null : _attemptLogin(),
                 ),
               const SizedBox(height: 24),
               Center(

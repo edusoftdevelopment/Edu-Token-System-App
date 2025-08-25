@@ -1,11 +1,4 @@
 class LoginInfoModel {
-  int? loginId;
-  int? employeeCode;
-  String? loginName;
-  String? password;
-  int? stopNegativeKOT;
-  String? employeeName;
-
   LoginInfoModel({
     this.loginId,
     this.employeeCode,
@@ -23,15 +16,21 @@ class LoginInfoModel {
     stopNegativeKOT = json['StopNegativeKOT'] as int?;
     employeeName = json['EmployeeName'] as String?;
   }
+  int? loginId;
+  int? employeeCode;
+  String? loginName;
+  String? password;
+  int? stopNegativeKOT;
+  String? employeeName;
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['LoginId'] = this.loginId;
-    data['EmployeeCode'] = this.employeeCode;
-    data['LoginName'] = this.loginName;
-    data['Password'] = this.password;
-    data['StopNegativeKOT'] = this.stopNegativeKOT;
-    data['EmployeeName'] = this.employeeName;
+    final data = <String, dynamic>{};
+    data['LoginId'] = loginId;
+    data['EmployeeCode'] = employeeCode;
+    data['LoginName'] = loginName;
+    data['Password'] = password;
+    data['StopNegativeKOT'] = stopNegativeKOT;
+    data['EmployeeName'] = employeeName;
     return data;
   }
 }

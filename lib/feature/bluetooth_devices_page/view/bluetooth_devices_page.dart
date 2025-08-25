@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/network/network.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
       for (final d in paired) {
         debugPrint('--- Device ---');
         debugPrint('runtimeType: ${d.runtimeType}');
-        debugPrint('toString(): ${d.toString()}');
+        debugPrint('toString(): $d');
         // Common properties (name & mac used earlier)
         debugPrint('name: ${d.name}');
         debugPrint('mac: ${d.macAdress}');
@@ -97,11 +98,11 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
           // Some implementations might have deviceType or type
           final type = (d as dynamic).deviceType ?? (d as dynamic).type;
           debugPrint('deviceType: $type');
-        } catch (_) {}
+        }on Failure catch (_) {}
       }
-    } catch (e) {
+    }on Failure catch (e) {
       debugPrint('Error loading paired: $e');
-      _showErrorDialog('Error', 'Failed to load paired devices: $e');
+      await _showErrorDialog('Error', 'Failed to load paired devices: $e');
       setState(() => paired = []);
     } finally {
       ref.read(isBusyProvider.notifier).state = false;
@@ -120,13 +121,13 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
         // update provider here — OK because this is not during build
         ref.read(connectedMacProvider.notifier).state = mac;
 
-        _showErrorDialog('Successfully Connected', 'Connected to $mac');
+        await _showErrorDialog('Successfully Connected', 'Connected to $mac');
       } else {
-        _showErrorDialog('Message', 'Connect returned: $res');
+        await _showErrorDialog('Message', 'Connect returned: $res');
       }
     } catch (e) {
       debugPrint('Connect error: $e');
-      _showErrorDialog('Connect error!', 'Failed to connect: $e');
+      await _showErrorDialog('Connect error!', 'Failed to connect: $e');
     } finally {
       ref.read(isBusyProvider.notifier).state = false;
     }
@@ -140,14 +141,14 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
       // update provider here too
       ref.read(connectedMacProvider.notifier).state = null;
 
-      _showErrorDialog(
+      await _showErrorDialog(
         'Disconnected!',
         'Successfully disconnected from device.',
       );
       // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Disconnected')));
-    } catch (e) {
+    } on Failure catch (e) {
       debugPrint('Disconnect error: $e');
-      _showErrorDialog('Error', 'Failed to disconnect: $e');
+      await _showErrorDialog('Error', 'Failed to disconnect: $e');
     }
   }
 
@@ -197,15 +198,15 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
   // }
 
   Future<List<int>> _buildBytes() async {
-    final CapabilityProfile profile = await CapabilityProfile.load();
-    final Generator generator = Generator(PaperSize.mm80, profile);
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(PaperSize.mm80, profile);
 
-    List<int> bytes = [];
+    var bytes = <int>[];
 
     // Top stars line
     bytes += generator.text(
       '********************************',
-      styles: PosStyles(bold: true, align: PosAlign.center),
+      styles: const PosStyles(bold: true, align: PosAlign.center),
     );
 
     // Big number in center (9800)
@@ -222,13 +223,13 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     // Bottom stars line
     bytes += generator.text(
       '********************************',
-      styles: PosStyles(bold: true, align: PosAlign.center),
+      styles: const PosStyles(bold: true, align: PosAlign.center),
     );
 
     // Parking title
     bytes += generator.text(
       'Fun Forest car Parking',
-      styles: PosStyles(align: PosAlign.center),
+      styles: const PosStyles(align: PosAlign.center),
     );
 
     bytes += generator.feed(1);
@@ -236,12 +237,12 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     // Date & Time
     bytes += generator.text(
       'Date:${widget.date}  Time:${widget.time}',
-      styles: PosStyles(align: PosAlign.left),
+      styles: const PosStyles(align: PosAlign.left),
     );
 
     bytes += generator.text(
       'Price: 70 Rs   Ticket: SR-2892',
-      styles: PosStyles(align: PosAlign.left),
+      styles: const PosStyles(align: PosAlign.left),
     );
 
     bytes += generator.feed(1);
@@ -249,11 +250,11 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     // Footer text
     bytes += generator.text(
       'Keep this ticket for exit.',
-      styles: PosStyles(align: PosAlign.center),
+      styles: const PosStyles(align: PosAlign.center),
     );
     bytes += generator.text(
       'Thanks for visiting!',
-      styles: PosStyles(align: PosAlign.center),
+      styles: const PosStyles(align: PosAlign.center),
     );
 
     bytes += generator.cut();
@@ -278,7 +279,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Print sent')));
-    } catch (e) {
+    } on Failure catch (e) {
       debugPrint('Print error: $e');
       ScaffoldMessenger.of(
         context,
@@ -291,17 +292,17 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
   // Use BluetoothInfo's properties directly (name and macAdress)
   // Use BluetoothInfo's properties directly (name and macAdress)
   Widget _deviceTile(BluetoothInfo d, int index) {
-    final name = d.name ?? 'Unknown';
-    final mac = d.macAdress ?? 'unknown_mac';
+    final name = d.name;
+    final mac = d.macAdress;
 
     // read provider (or use connectedMac variable) — this is safe in build
     final currentConnectedMac = ref.watch(connectedMacProvider);
     final isConnected =
-        currentConnectedMac != null && currentConnectedMac == mac.toString();
+        currentConnectedMac != null && currentConnectedMac == mac;
 
     return ListTile(
-      title: Text(name.toString()),
-      subtitle: Text(mac.toString()),
+      title: Text(name),
+      subtitle: Text(mac),
       trailing: isConnected
           ? Row(
               mainAxisSize: MainAxisSize.min,
@@ -315,7 +316,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
               ],
             )
           : TextButton(
-              onPressed: () => _connect(mac.toString()),
+              onPressed: () => _connect(mac),
               child: const Text('Connect'),
             ),
     );
@@ -347,7 +348,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: CustomAppBarEduTokenSystem(
-        title: 'Available Devies',
+        title: 'Available Devices',
         size: size,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadPaired),
