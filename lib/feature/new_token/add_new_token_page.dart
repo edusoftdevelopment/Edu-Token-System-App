@@ -1,13 +1,19 @@
+import 'dart:convert';
+
+import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
+import 'package:edu_token_system_app/feature/new_token/model/product_model.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddNewTokenPage extends ConsumerStatefulWidget {
   const AddNewTokenPage({super.key});
@@ -17,7 +23,7 @@ class AddNewTokenPage extends ConsumerStatefulWidget {
 }
 
 class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
-  String? selectedVehicle;
+  // String? selectedVehicle;
   final List<String> vehicles = ['Car', 'Motorcycle', 'Cycle', 'Truck'];
   late TextEditingController _numberController;
   DateTime? currentDateTime;
@@ -25,15 +31,68 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
   String? time;
   bool busy = false;
   String? connectedMac;
+  MssqlHelper mssqlHelper = MssqlHelper();
+  String? currentDatabase;
+  List<ProductModel> products = [];
+  ProductModel? selectedProduct = null;
 
   @override
   void initState() {
     super.initState();
     _numberController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      currentDatabase = await _getSelectedDatabase();
+      await _fetchProductDetails();
+    });
   }
 
   Stream<DateTime> _timeStream() {
     return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+  }
+
+  Future<String> _getSelectedDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    const key = 'selectedDb';
+    final selectedDb = prefs.getString(key);
+    return selectedDb ?? 'Select Database'; // Default database if none selected
+  }
+
+  Future<void> _fetchProductDetails() async {
+    try {
+      await mssqlHelper.connect(
+        ip: AppConfig.dbHost,
+        port: AppConfig.dbPort,
+        username: AppConfig.dbUser,
+        password: AppConfig.dbPassword,
+        databaseName: currentDatabase ?? '',
+      );
+    } catch (e) {
+      _showErrorDialog('Error While Connecting Database', e.toString(), false);
+    }
+
+    try {
+      final result = await mssqlHelper.query(
+        queryStrig: '''
+SELECT
+  pro.ProductID,
+  pro.ProductName,
+  pro.UnitPrice
+FROM gen_ProductsInfo AS pro
+INNER JOIN gen_RestaurantProductCategoryInfo AS cat
+  ON pro.CategoryID = cat.ProductCategoryID
+WHERE cat.IsTokan = 1
+''',
+      );
+      final decoded = jsonDecode(result) as List<dynamic>;
+      products = decoded
+          .map((item) => ProductModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+      debugPrint('Query Result: $result');
+    } catch (e) {
+      _showErrorDialog('Error While Fetching Data', e.toString(), false);
+    } finally {
+      await mssqlHelper.close();
+    }
   }
 
   @override
@@ -42,7 +101,11 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
     _numberController.dispose();
   }
 
-  Future<void> _showErrorDialog(String title, String message) async {
+  Future<void> _showErrorDialog(
+    String title,
+    String message,
+    bool forBluetooth,
+  ) async {
     if (!mounted) return;
 
     return showDialog(
@@ -59,26 +122,29 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
           style: const TextStyle(color: AppColors.kWhite),
         ),
         actions: [
+          if (forBluetooth)
+            TextButton(
+              child: const Text(
+                'Settings',
+                style: TextStyle(color: AppColors.kWhite),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<BluetoothDevicesPage>(
+                    builder: (context) {
+                      return BluetoothDevicesPage();
+                    },
+                  ),
+                ).then((_) => Navigator.of(context).pop());
+              },
+            )
+          else
+            SizedBox(),
           TextButton(
-            child: const Text(
-              'Settings',
-              style: TextStyle(color: AppColors.kWhite),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<BluetoothDevicesPage>(
-                  builder: (context) {
-                    return BluetoothDevicesPage();
-                  },
-                ),
-              ).then((_) => Navigator.of(context).pop());
-            },
-          ),
-          TextButton(
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.kWhite),
+            child: Text(
+              forBluetooth ? 'ok' : 'Cancel',
+              style: const TextStyle(color: AppColors.kWhite),
             ),
             onPressed: () {
               Navigator.of(context).pop(); // This will close the dialog
@@ -159,6 +225,7 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
       await _showErrorDialog(
         'Message',
         'No printer connected! Please connect first from the settings.',
+        true,
       );
       return;
     }
@@ -294,7 +361,7 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
                         ),
                       ],
                     ),
-                    child: PopupMenuButton<String>(
+                    child: PopupMenuButton<ProductModel>(
                       constraints: BoxConstraints(
                         minWidth:
                             dropdownWidth, // 👈 dropdown button jitni width
@@ -302,11 +369,13 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
                       ),
                       onSelected: (value) {
                         setState(() {
-                          selectedVehicle = value;
+                          selectedProduct = value;
                         });
                       },
-                      itemBuilder: (context) => vehicles.map((String vehicle) {
-                        return PopupMenuItem<String>(
+                      itemBuilder: (context) => products.map((
+                        ProductModel vehicle,
+                      ) {
+                        return PopupMenuItem<ProductModel>(
                           value: vehicle,
                           padding: EdgeInsets.zero, // 🔹 default padding hatao
                           child: SizedBox(
@@ -317,7 +386,7 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
                                 horizontal: 12,
                               ),
                               child: AutoSizeText(
-                                vehicle,
+                                vehicle.productName ?? '',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.black87,
@@ -350,10 +419,10 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             AutoSizeText(
-                              selectedVehicle ?? 'Select Vehicle',
+                              selectedProduct?.productName ?? 'Select Vehicle',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: selectedVehicle == null
+                                color: selectedProduct == null
                                     ? Colors.grey.shade600
                                     : Colors.black87,
                               ),
@@ -399,10 +468,12 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
                             width: 1.2,
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Padding(
-                            padding: EdgeInsets.all(14),
-                            child: Text('Rs.100'),
+                            padding: const EdgeInsets.all(14),
+                            child: Text(
+                              '${selectedProduct?.unitPrice ?? '0'} Rs',
+                            ),
                           ),
                         ),
                       ),
