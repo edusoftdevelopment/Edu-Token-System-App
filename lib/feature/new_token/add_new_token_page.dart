@@ -420,7 +420,7 @@ WHERE data_TokenInfo.TokenID = $tokenID
                         context,
                         MaterialPageRoute(
                           builder: (context) {
-                            return HistoryPage();
+                            return HistoryTokenSystemPage();
                           },
                         ),
                       );
