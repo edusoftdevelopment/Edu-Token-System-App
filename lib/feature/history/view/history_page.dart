@@ -3,32 +3,31 @@ import 'dart:convert';
 import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart';
 import 'package:edu_token_system_app/Helper/mssql_helper.dart';
+import 'package:edu_token_system_app/core/common/common.dart';
+import 'package:edu_token_system_app/core/common/custom_dialog.dart';
+import 'package:edu_token_system_app/core/network/network.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
+import 'package:edu_token_system_app/feature/history/model/history_edu_token_system_model.dart';
+import 'package:edu_token_system_app/feature/history/widget/widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+class HistoryTokenSystemPage extends StatefulWidget {
+  const HistoryTokenSystemPage({super.key});
 
   @override
-  State<HistoryPage> createState() => _HistoryPageState();
+  State<HistoryTokenSystemPage> createState() => _HistoryTokenSystemPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
-  // String? selectedVehicle;
-  DateTime? currentDateTime;
-  String? date;
-  String? time;
-  bool busy = false;
-  String? connectedMac;
+class _HistoryTokenSystemPageState extends State<HistoryTokenSystemPage> {
   MssqlHelper mssqlHelper = MssqlHelper();
   String? currentDatabase;
-
+  List<EduTokenSystemHistoryModel> historyData = [];
+  bool isLoading = true;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // currentDatabase = await _getSelectedDatabase();
+      currentDatabase = await _getSelectedDatabase();
       await _fetchHistoryDetails();
     });
   }
@@ -37,113 +36,101 @@ class _HistoryPageState extends State<HistoryPage> {
     return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
   }
 
-  // Future<String> _getSelectedDatabase() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   const key = 'selectedDb';
-  //   final selectedDb = prefs.getString(key);
-  //   return selectedDb ?? 'Select Database'; // Default database if none selected
-  // }
+  Future<String> _getSelectedDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    const key = 'selectedDb';
+    final selectedDb = prefs.getString(key);
+    return selectedDb ?? 'Select Database'; // Default database if none selected
+  }
 
   Future<void> _fetchHistoryDetails() async {
+    setState(() {
+      isLoading = true;
+    });
     try {
       await mssqlHelper.connect(
         ip: AppConfig.dbHost,
         port: AppConfig.dbPort,
         username: AppConfig.dbUser,
         password: AppConfig.dbPassword,
-        databaseName: currentDatabase ?? '',
+        databaseName: currentDatabase.toString(),
       );
-    } catch (e) {
-      await _showErrorDialog(
-        'Error While Connecting Database',
-        e.toString(),
-        false,
-      );
-    }
 
-    try {
       final result = await mssqlHelper.query(
         queryStrig: '''
-select data_TokenInfo.*,gen_ProductsInfo.ProductName from data_TokenInfo
-inner join gen_ProductsInfo on gen_ProductsInfo.ProductID=data_TokenInfo.ProductID
-where data_TokenInfo.Posted=0
-''',
+        select data_TokenInfo.*, gen_ProductsInfo.ProductName 
+        from data_TokenInfo
+        inner join gen_ProductsInfo 
+        on gen_ProductsInfo.ProductID = data_TokenInfo.ProductID
+        where data_TokenInfo.Posted=0
+      ''',
       );
+
       final decoded = jsonDecode(result) as List<dynamic>;
-      // products = decoded
-      //     .map((item) => ProductModel.fromJson(item as Map<String, dynamic>))
-      //     .toList();
-      debugPrint('Query Result: $result');
-    } catch (e) {
-      await _showErrorDialog('Error While Fetching Data', e.toString(), false);
+      setState(() {
+        historyData = decoded
+            .map(
+              (item) => EduTokenSystemHistoryModel.fromJson(
+                item as Map<String, dynamic>,
+              ),
+            )
+            .toList();
+        isLoading = false;
+      });
+    } on Failure catch (e) {
+      await DialogHelper.showErrorDialog(
+        context: context,
+        title: 'Error While Fetching Data',
+        message: e.toString(),
+      );
+      setState(() {
+        isLoading = false;
+      });
     } finally {
       await mssqlHelper.close();
     }
   }
 
-  Future<void> _showErrorDialog(
-    String title,
-    String message,
-    bool forBluetooth,
-  ) async {
-    if (!mounted) return;
-
-    return showDialog(
-      context: context,
-      barrierDismissible: false, // User must tap button to close dialog
-      builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFF203a43),
-        title: Text(
-          title,
-          style: const TextStyle(color: AppColors.kWhite),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(color: AppColors.kWhite),
-        ),
-        actions: [
-          if (forBluetooth)
-            TextButton(
-              child: const Text(
-                'Settings',
-                style: TextStyle(color: AppColors.kWhite),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<BluetoothDevicesPage>(
-                    builder: (context) {
-                      return BluetoothDevicesPage();
-                    },
-                  ),
-                ).then((_) => Navigator.of(context).pop());
-              },
-            )
-          else
-            const SizedBox(),
-          TextButton(
-            child: Text(
-              forBluetooth ? 'ok' : 'Cancel',
-              style: const TextStyle(color: AppColors.kWhite),
-            ),
-            onPressed: () {
-              Navigator.of(context).pop(); // This will close the dialog
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Token History'),
+      backgroundColor: const Color(0xFFF5F6FA),
+      appBar: CustomAppBarEduTokenSystem(
+        title: 'Token History',
+        size: size,
+        titleStyle:
+            Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(
+              color: AppColors.kWhite,
+              fontSize: 24,
+            ),
       ),
-      body: const Center(
-        child: Text('No history available'),
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : historyData.isEmpty
+          ? const Center(
+              child: Text(
+                'No history found!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchHistoryDetails,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: historyData.length,
+                itemBuilder: (context, index) {
+                  final item = historyData[index];
+                  return HistoryCard(item: item);
+                },
+              ),
+            ),
     );
   }
 }
