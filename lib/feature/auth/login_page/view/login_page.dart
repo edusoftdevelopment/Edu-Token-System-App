@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
-import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/Export/export.dart' hide Key;
+import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
@@ -15,6 +17,7 @@ import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
+import 'package:encrypt/encrypt.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +38,6 @@ class _LoginPageState extends State<LoginPage> {
   List<DbListsModel> dbList = [];
   DbListsModel? selectedDb;
   bool loadingDbList = false;
-  final _mssqlPort = 1433;
   String?
   selectedDatabase; // change if your instance uses a different static port
   List<LoginInfoModel>? loginInfoList;
@@ -109,11 +111,21 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false, // User must tap button to close dialog
       builder: (BuildContext context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        backgroundColor: const Color(0xFF203a43),
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.kWhite),
+        ),
         actions: [
           TextButton(
-            child: const Text('OK'),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: AppColors.kWhite),
+            ),
             onPressed: () {
               Navigator.of(context).pop(); // This will close the dialog
             },
@@ -124,62 +136,77 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<List<DbListsModel>> _getDatabsesList() async {
-    setState(() {
-      loadingDbList = true;
-    });
-    final db = MssqlConnection.getInstance();
-    const maxRetries = 1;
-    var retry = 0;
+    try {
+      setState(() {
+        loadingDbList = true;
+      });
+      final db = MssqlConnection.getInstance();
+      final conn = MssqlHelper();
+      const maxRetries = 1;
+      var retry = 0;
 
-    while (retry < maxRetries) {
-      try {
-        await db.connect(
-          ip: AppConfig.dbHost,
-          port: AppConfig.dbPort,
-          databaseName: AppConfig.initialDatabase,
-          username: AppConfig.dbUser,
-          password: AppConfig.dbPassword,
-        );
-        break;
-      } catch (e) {
-        retry++;
-        if (retry >= maxRetries) {
-          throw Exception('Failed to connect after $maxRetries attempts: $e');
+      while (retry < maxRetries) {
+        try {
+          await conn.connect(
+            ip: AppConfig.dbHost,
+            port: AppConfig.dbPort,
+            username: AppConfig.dbUser,
+            password: AppConfig.dbPassword,
+            databaseName: AppConfig.initialDatabase,
+          );
+
+          break;
+        } catch (e) {
+          retry++;
+          if (retry >= maxRetries) {
+            throw Exception('Failed to connect after $maxRetries attempts: $e');
+          }
+
+          await Future.delayed(const Duration(seconds: 1));
         }
-
-        await Future.delayed(const Duration(seconds: 1));
       }
-    }
-    if (db.isConnected == false) {
-      throw Exception('Connection failed');
-    }
-    log('Connection attempt finished');
-    // Step 1: Query execute karo
-    String? jsonResDbList;
-    await db
-        .getData(
-          "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
-        )
-        .then((value) {
-          jsonResDbList = value;
-        });
+      if (db.isConnected == false) {
+        throw Exception('Connection failed');
+      }
+      log('Connection attempt finished');
+      String? jsonResDbList;
+      try {
+        jsonResDbList = await conn.query(
+          queryStrig:
+              "Select DefaultDB, Alias From gen_SingleConnections where ApplicationCodeName='eduRestaurantManagerEnterprise'",
+        );
+      } catch (e) {
+        throw Exception('Failed to fetch databases List: $e');
+      }
 
-    // Step 2: decode karo aur model list banao
-    final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
+      // Step 2: decode karo aur model list banao
+      final decoded = jsonDecode(jsonResDbList!) as List<dynamic>;
 
-    // Step 3: har ek map ko model me convert karo
-    final dbLists = decoded
-        .map<DbListsModel>(
-          (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
-        )
-        .toList();
-    if (jsonResDbList == null) {
-      throw Exception('No databases found');
+      // Step 3: har ek map ko model me convert karo
+      final dbLists = decoded
+          .map<DbListsModel>(
+            (json) => DbListsModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+      if (jsonResDbList == null) {
+        throw Exception('No databases found');
+      }
+      await conn.close();
+      setState(() {
+        loadingDbList = false;
+      });
+      return dbLists;
+    } catch (e) {
+      if (mounted) {
+        if (selectedDatabase == null || selectedDatabase == 'Select Database') {
+          await _showErrorDialog(
+            'Error Accurred while fetching databases',
+            '${e.toString()}',
+          );
+        }
+      }
+      return [];
     }
-    setState(() {
-      loadingDbList = false;
-    });
-    return dbLists;
   }
 
   Future<void> _attemptLogin() async {
@@ -238,7 +265,7 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Failed to fetch login info: $e');
       }
 
-      loginMatched = isLoginMatch(
+      loginMatched = await isLoginMatch(
         loginInfoList: loginInfoList!,
         inputUsername: _emailController.text,
         inputPassword: _passwordController.text,
@@ -252,9 +279,9 @@ class _LoginPageState extends State<LoginPage> {
       AppConfig.employeeName = username;
 
       // TODO: Add navigation after successful login
-      Navigator.pushReplacement(
+      await Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
+        MaterialPageRoute<AddNewTokenPage>(
           builder: (context) => const AddNewTokenPage(),
         ),
       );
@@ -274,63 +301,119 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   /// Returns true if any entry in the list matches the provided credentials.
+  Future<bool> isLoginMatch({
+  required List<LoginInfoModel> loginInfoList,
+  required String inputUsername,
+  required String inputPassword,
+}) async {
+  final u = inputUsername.trim().toLowerCase();
+  final p = inputPassword; // case-sensitive
 
-  bool isLoginMatch({
-    required List<LoginInfoModel> loginInfoList,
-    required String inputUsername,
-    required String inputPassword,
-  }) {
-    final u = inputUsername.trim().toLowerCase();
-    final p = inputPassword; // case-sensitive
+  for (final item in loginInfoList) {
+    final decUser = vbDecrypt(item.loginName!).trim().toLowerCase();
+    final decPass = vbDecrypt(item.password!).trim();
 
-    for (final item in loginInfoList) {
-      final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
-      final decPass = vbDecrypt(item.password);
+    if (decUser == u && decPass == p) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_password', p);
 
-      if (decUser == u && decPass == p) {
-        return true;
-      }
+      return true;
     }
-    return false;
+  }
+  return false;
+}
+
+  String vbDecrypt(String input) {
+    if (input.isEmpty) return '';
+    if (input.contains('€')) {
+      input = input.substring(0, input.indexOf('€'));
+    }
+    final sb = StringBuffer();
+    const int power = 3;
+    for (int i = 0; i < input.length; i++) {
+      final int ascii = input.codeUnitAt(i);
+      final int resultAfterPower = ascii ^ power; // XOR with 3
+      sb.write(String.fromCharCode(resultAfterPower));
+    }
+    return sb.toString();
   }
 
-  String vbDecrypt(String? input) {
-    if (input == null) return '';
-
-    // Agar '€' mojood ho toh us se pehle ka part lo
-    final idx = input.indexOf('€');
-    final part = idx >= 0 ? input.substring(0, idx) : input;
-
-    if (part.isEmpty) return '';
-
-    final buffer = StringBuffer();
-    const key = 3; // XOR key
-
-    for (var i = 0; i < part.length; i++) {
-      final code = part.codeUnitAt(i);
-      final decoded = code ^ key;
-      buffer.writeCharCode(decoded);
+  /// AES-CBC-PKCS7 decrypt helper.
+  /// - `base64Cipher` is the encrypted text in Base64 (as commonly produced by Java + CryptLib).
+  /// - `keyStr` and `ivStr` should be UTF-8 strings of the correct length:
+  ///    * For AES-128 use 16-char key and 16-char iv
+  ///    * For AES-256 use 32-char key (encrypt package supports 32 bytes keys).
+  ///
+  /// Returns plaintext (UTF-8).
+  String aesDecryptBase64(String base64Cipher, String keyStr, String ivStr) {
+    if (base64Cipher.isEmpty) return '';
+    // Validate key/iv length
+    final keyBytes = utf8.encode(keyStr);
+    final ivBytes = utf8.encode(ivStr);
+    if (!(keyBytes.length == 16 ||
+        keyBytes.length == 24 ||
+        keyBytes.length == 32)) {
+      throw ArgumentError(
+        'Key must be 16/24/32 bytes long (UTF-8 chars). Current length: ${keyBytes.length}',
+      );
+    }
+    if (ivBytes.length != 16) {
+      throw ArgumentError(
+        'IV must be 16 bytes long (UTF-8 chars). Current length: ${ivBytes.length}',
+      );
     }
 
-    return buffer.toString();
+    final key = Key(Uint8List.fromList(keyBytes));
+    final iv = IV(Uint8List.fromList(ivBytes));
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));
+
+    // If base64Cipher includes newlines/spaces, trim them
+    final cleanBase64 = base64Cipher
+        .replaceAll('\n', '')
+        .replaceAll('\r', '')
+        .trim();
+
+    // encrypt.Encrypted.fromBase64 expects a valid base64
+    final encrypted = Encrypted.fromBase64(cleanBase64);
+
+    final decrypted = encrypter.decrypt(encrypted, iv: iv);
+    return decrypted;
   }
 
-  bool matchesCredentials({
-    required String inputUsername,
-    required String inputPassword,
-    required String dbLoginName, // value from DB row's LoginName
-    required String dbPassword, // value from DB row's Password
-  }) {
-    final decryptedUsername = vbDecrypt(dbLoginName);
-    final decryptedPassword = vbDecrypt(dbPassword);
-
-    final usernameMatches =
-        inputUsername.trim().toLowerCase() ==
-        decryptedUsername.trim().toLowerCase();
-    final passwordMatches = inputPassword == decryptedPassword;
-
-    return usernameMatches && passwordMatches;
+  /// Try decrypt with AES; if it fails (bad base64 or invalid key/iv),
+  /// this helper catches and returns null so caller can try alternatives.
+  String? tryAesDecryptBase64(
+    String base64Cipher,
+    String keyStr,
+    String ivStr,
+  ) {
+    try {
+      return aesDecryptBase64(base64Cipher, keyStr, ivStr);
+    } catch (e) {
+      return null;
+    }
   }
+
+  // String vbDecrypt(String? input) {
+  //   if (input == null) return '';
+
+  //   // Agar '€' mojood ho toh us se pehle ka part lo
+  //   final idx = input.indexOf('€');
+  //   final part = idx >= 0 ? input.substring(0, idx) : input;
+
+  //   if (part.isEmpty) return '';
+
+  //   final buffer = StringBuffer();
+  //   const key = 3; // XOR key
+
+  //   for (var i = 0; i < part.length; i++) {
+  //     final code = part.codeUnitAt(i);
+  //     final decoded = code ^ key;
+  //     buffer.writeCharCode(decoded);
+  //   }
+
+  //   return buffer.toString();
+  // }
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
@@ -497,14 +580,7 @@ class _LoginPageState extends State<LoginPage> {
               else
                 CustomButton(
                   name: 'Login In',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AddNewTokenPage(),
-                      ),
-                    );
-                  },
+                  onPressed:() => _isLoading ? null : _attemptLogin(),
                 ),
               const SizedBox(height: 24),
               Center(
