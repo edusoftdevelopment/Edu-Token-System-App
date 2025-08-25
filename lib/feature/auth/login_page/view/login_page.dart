@@ -310,8 +310,8 @@ class _LoginPageState extends State<LoginPage> {
   final p = inputPassword; // case-sensitive
 
   for (final item in loginInfoList) {
-    final decUser = vbDecrypt(item.loginName).trim().toLowerCase();
-    final decPass = vbDecrypt(item.password);
+    final decUser = vbDecrypt(item.loginName!).trim().toLowerCase();
+    final decPass = vbDecrypt(item.password!).trim();
 
     if (decUser == u && decPass == p) {
       final prefs = await SharedPreferences.getInstance();
