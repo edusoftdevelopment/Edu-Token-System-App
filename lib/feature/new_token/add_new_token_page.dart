@@ -11,6 +11,7 @@ import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/bluetooth_devices_page/view/bluetooth_devices_page.dart';
 import 'package:edu_token_system_app/feature/history/view/history_page.dart';
+import 'package:edu_token_system_app/feature/new_token/model/company_name_model.dart';
 import 'package:edu_token_system_app/feature/new_token/model/product_model.dart';
 import 'package:edu_token_system_app/feature/new_token/model/single_product_model.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
@@ -33,7 +34,6 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
   DateTime? currentDateTime;
   String? date;
   String? time;
-  bool busy = false;
   String? connectedMac;
   MssqlHelper mssqlHelper = MssqlHelper();
   String? currentDatabase;
@@ -41,6 +41,7 @@ class _AddNewTokenPageState extends ConsumerState<AddNewTokenPage> {
   ProductModel? selectedProduct = null;
   int? tokenID;
   SingleProductModel? singleProductModel;
+  CompanyNameModel? companyNameModel;
 
   @override
   void initState() {
@@ -104,11 +105,12 @@ WHERE cat.IsTokan = 1
   Future<int?> insertTokenInfo({
     required DateTime tokenDate,
     required int productID,
-    required int quantity,
+    required String vahicleNo,
     required double rate,
     required int userEmployeeID,
   }) async {
     try {
+      ref.read(loadWhilesavingProvider.notifier).state = true;
       await mssqlHelper.connect(
         ip: AppConfig.dbHost,
         port: AppConfig.dbPort,
@@ -117,6 +119,7 @@ WHERE cat.IsTokan = 1
         databaseName: currentDatabase ?? '',
       );
     } catch (e) {
+      ref.read(loadWhilesavingProvider.notifier).state = false;
       _showErrorDialog('Error While Connecting Database', e.toString(), false);
       return null;
     }
@@ -131,10 +134,11 @@ DECLARE @TokenID BIGINT;
 EXEC sp_TokenInfoInsert
   @TokenDate = N'$tokenDateStr',
   @ProductID = $productID,
-  @Quantity = $quantity,
+  @Quantity = 1,
   @Rate = $rate,
   @UserEmployeeID = $userEmployeeID,
-  @TokenID = @TokenID OUTPUT;
+  @TokenID = @TokenID OUTPUT,
+  @VehicleNo = $vahicleNo;
 SELECT @TokenID AS TokenID;
 ''';
 
@@ -162,6 +166,7 @@ SELECT @TokenID AS TokenID;
         return null;
       }
     } catch (e) {
+      ref.read(loadWhilesavingProvider.notifier).state = false;
       _showErrorDialog('Error While Inserting Token', e.toString(), false);
       return null;
     } finally {
@@ -180,6 +185,7 @@ SELECT @TokenID AS TokenID;
         databaseName: currentDatabase ?? '',
       );
     } catch (e) {
+      ref.read(loadWhilesavingProvider.notifier).state = false;
       _showErrorDialog('Error While Connecting Database', e.toString(), false);
     }
 
@@ -192,27 +198,52 @@ FROM data_TokenInfo
 INNER JOIN gen_ProductsInfo 
   ON gen_ProductsInfo.ProductID = data_TokenInfo.ProductID
 WHERE data_TokenInfo.TokenID = $tokenID
+
 ''';
 
       final result = await mssqlHelper.query(queryStrig: sql);
 
       log('result: $result');
+      final sql2 = '''
+select top 1 CompanyName from CompanyInfo
+
+''';
+
+      final result2 = await mssqlHelper.query(queryStrig: sql2);
+      log('result2: $result2');
 
       final decoded = jsonDecode(result);
+      final decoded2 = jsonDecode(result2);
+      if (decoded2 is List && decoded2.isNotEmpty) {
+        final first = decoded2[0] as Map<String, dynamic>;
+        final companyModel = CompanyNameModel.fromJson(first);
+        log('Company Model: ${companyModel.toJson()}');
+        companyNameModel = companyModel;
+      } else {
+        log('No Company Name found');
+      }
       if (decoded is List && decoded.isNotEmpty) {
         final first = decoded[0] as Map<String, dynamic>;
         final tokenModel = SingleProductModel.fromJson(first);
         log('Token Model: ${tokenModel.toJson()}');
         singleProductModel = tokenModel;
         await _printText(
-          quantity: singleProductModel!.quantity.toString(),
+          quantity: singleProductModel!.vehicleNo ?? '',
           tokenDate: singleProductModel?.tokenDate ?? '',
           rate: singleProductModel!.rate.toString(),
           tokenId: singleProductModel!.tokenID.toString(),
         );
+        ref.read(loadWhilesavingProvider.notifier).state = false;
       } else {
+        ref.read(loadWhilesavingProvider.notifier).state = false;
+        _showErrorDialog(
+          'No Data',
+          'No data found for TokenID: $tokenID',
+          false,
+        );
         log('No data found for TokenID: $tokenID');
       }
+      ref.read(loadWhilesavingProvider.notifier).state = false;
     } catch (e) {
       _showErrorDialog('Error While Fetching Token Info', e.toString(), false);
     } finally {
@@ -316,7 +347,7 @@ WHERE data_TokenInfo.TokenID = $tokenID
 
     // Parking title
     bytes += generator.text(
-      'Fun Forest car Parking',
+      companyNameModel?.companyName ?? '',
       styles: PosStyles(align: PosAlign.center),
     );
 
@@ -365,7 +396,6 @@ WHERE data_TokenInfo.TokenID = $tokenID
       return;
     }
 
-    setState(() => busy = true);
     try {
       final bytes = await _buildBytes(
         quantity: quantity,
@@ -384,7 +414,7 @@ WHERE data_TokenInfo.TokenID = $tokenID
         context,
       ).showSnackBar(SnackBar(content: Text('Print error: $e')));
     } finally {
-      setState(() => busy = false);
+      ref.read(loadWhilesavingProvider.notifier).state = false;
     }
   }
 
@@ -392,7 +422,7 @@ WHERE data_TokenInfo.TokenID = $tokenID
   Widget build(BuildContext context) {
     final darkMode = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
-
+    final isLoading = ref.watch(loadWhilesavingProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
@@ -420,7 +450,7 @@ WHERE data_TokenInfo.TokenID = $tokenID
                         context,
                         MaterialPageRoute(
                           builder: (context) {
-                            return HistoryPage();
+                            return BluetoothDevicesPage();
                           },
                         ),
                       );
@@ -643,19 +673,41 @@ WHERE data_TokenInfo.TokenID = $tokenID
                   SizedBox(height: height * 0.02),
 
                   const Spacer(),
-                  CustomButton(
-                    name: 'Save',
-                    onPressed: () async {
-                      await insertTokenInfo(
-                        tokenDate: DateTime.now(),
-                        productID: selectedProduct!.productID!,
-                        quantity: int.parse(_numberController.text),
-                        rate: selectedProduct!.unitPrice!,
-                        userEmployeeID: 45,
-                      );
-                      await _getDataFromTokenID();
-                    },
-                  ),
+                  if (isLoading)
+                    CustomButton(
+                      onPressed: () {},
+                      widget: Center(
+                        child: LoadingAnimationWidget.staggeredDotsWave(
+                          color: AppColors.kWhite,
+                          size: 20,
+                        ),
+                      ),
+                    )
+                  else
+                    CustomButton(
+                      name: 'Save',
+                      onPressed: () async {
+                        if (_numberController.text.isEmpty ||
+                            selectedProduct == null ||
+                            selectedProduct?.unitPrice == null) {
+                          _showErrorDialog(
+                            'Enter Data First',
+                            'Please fill all the fileds!',
+                            false,
+                          );
+                          return;
+                        } else {
+                          await insertTokenInfo(
+                            tokenDate: DateTime.now(),
+                            productID: selectedProduct!.productID!,
+                            vahicleNo: _numberController.text,
+                            rate: selectedProduct!.unitPrice!,
+                            userEmployeeID: 45,
+                          );
+                          await _getDataFromTokenID();
+                        }
+                      },
+                    ),
                   const SizedBox(height: 50),
                 ],
               ).paddingHorizontal(20),
@@ -666,3 +718,5 @@ WHERE data_TokenInfo.TokenID = $tokenID
     );
   }
 }
+
+final loadWhilesavingProvider = StateProvider<bool>((ref) => false);
