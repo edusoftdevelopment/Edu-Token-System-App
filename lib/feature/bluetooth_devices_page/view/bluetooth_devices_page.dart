@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/network/network.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
@@ -6,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
-import 'package:esc_pos_utils/esc_pos_utils.dart';
 
 class BluetoothDevicesPage extends ConsumerStatefulWidget {
   BluetoothDevicesPage({super.key, this.time, this.date});
@@ -22,18 +23,12 @@ class BluetoothDevicesPage extends ConsumerStatefulWidget {
 class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
   // Use the real BluetoothInfo type from the package
   List<BluetoothInfo> paired = [];
-
+  Timer? _statusTimer;
   String? connectedMac;
   final TextEditingController _textController = TextEditingController(
     text:
         'Sample Receipt\nItem 1 - PKR 100\nItem 2 - PKR 50\n----------------\nTOTAL - PKR 150',
   );
-
-  @override
-  void initState() {
-    super.initState();
-    _prepare();
-  }
 
   Future<void> _prepare() async {
     await [
@@ -106,7 +101,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
         //   print("Error: $e");
         // }
       }
-    }on Failure catch (e) {
+    } on Failure catch (e) {
       debugPrint('Error loading paired: $e');
       await _showErrorDialog('Error', 'Failed to load paired devices: $e');
       setState(() => paired = []);
@@ -158,145 +153,6 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     }
   }
 
-  // Future<void> _connect(String mac) async {
-  //   ref.read(isBusyProvider.notifier).state = true;
-  //   try {
-  //     final res = await PrintBluetoothThermal.connect(macPrinterAddress: mac);
-  //     if (res == true ||
-  //         res == 'It is okay' ||
-  //         res == 'true' ||
-  //         res == 'connected') {
-  //       connectedMac = mac;
-  //       ref.read(connectedMacProvider.notifier).state = mac;
-
-  //       ScaffoldMessenger.of(
-  //         context,
-  //       ).showSnackBar(const SnackBar(content: Text('Connected')));
-  //     } else {
-  //       ScaffoldMessenger.of(
-  //         context,
-  //       ).showSnackBar(SnackBar(content: Text('Connect returned: $res')));
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Connect error: $e');
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Connect error: $e')));
-  //   } finally {
-  //     ref.read(isBusyProvider.notifier).state = false;
-  //   }
-  // }
-
-  // Future<void> _disconnect() async {
-  //   try {
-  //     // <<-- important: call the function (parentheses)
-  //     await PrintBluetoothThermal.disconnect;
-
-  //     connectedMac = null;
-  //     ref.read(connectedMacProvider.notifier).state = null;
-
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(const SnackBar(content: Text('Disconnected')));
-  //   } catch (e) {
-  //     debugPrint('Disconnect error: $e');
-  //   }
-  // }
-
-  Future<List<int>> _buildBytes() async {
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm80, profile);
-
-    var bytes = <int>[];
-
-    // Top stars line
-    bytes += generator.text(
-      '********************************',
-      styles: const PosStyles(bold: true, align: PosAlign.center),
-    );
-
-    // Big number in center (9800)
-    bytes += generator.text(
-      '9800',
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    );
-
-    // Bottom stars line
-    bytes += generator.text(
-      '********************************',
-      styles: const PosStyles(bold: true, align: PosAlign.center),
-    );
-
-    // Parking title
-    bytes += generator.text(
-      'Fun Forest car Parking',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-
-    bytes += generator.feed(1);
-
-    // Date & Time
-    bytes += generator.text(
-      'Date:${widget.date}  Time:${widget.time}',
-      styles: const PosStyles(align: PosAlign.left),
-    );
-
-    bytes += generator.text(
-      'Price: 70 Rs   Ticket: SR-2892',
-      styles: const PosStyles(align: PosAlign.left),
-    );
-
-    bytes += generator.feed(1);
-
-    // Footer text
-    bytes += generator.text(
-      'Keep this ticket for exit.',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.text(
-      'Thanks for visiting!',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-
-    bytes += generator.cut();
-    return bytes;
-  }
-
-  Future<void> _printText() async {
-    if (connectedMac == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please connect to a printer'),
-        ),
-      );
-      return;
-    }
-
-    ref.read(isBusyProvider.notifier).state = true;
-    try {
-      final bytes = await _buildBytes();
-      final res = await PrintBluetoothThermal.writeBytes(bytes);
-      debugPrint('writeBytes result: $res');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Print sent')));
-    } on Failure catch (e) {
-      debugPrint('Print error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Print error: $e')));
-    } finally {
-      ref.read(isBusyProvider.notifier).state = false;
-    }
-  }
-
-  // Use BluetoothInfo's properties directly (name and macAdress)
-  // Use BluetoothInfo's properties directly (name and macAdress)
   Widget _deviceTile(BluetoothInfo d, int index) {
     final name = d.name;
     final mac = d.macAdress;
@@ -328,25 +184,17 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
     );
   }
 
-  // Widget _deviceTile(BluetoothInfo d) {
-  //   final name = d.name ?? 'Unknown';
-  //   // note: package uses property 'macAdress' (single 'd' in Adress)
-  //   final mac = d.macAdress ?? 'unknown_mac';
-
-  //   ref.read(isDeviceConnectedProvider.notifier).state =
-  //       connectedMac != null && connectedMac == mac.toString();
-  //   final isConnected = ref.watch(isDeviceConnectedProvider);
-  //   return ListTile(
-  //     title: Text(name.toString()),
-  //     subtitle: Text(mac.toString()),
-  //     trailing: isConnected
-  //         ? TextButton(onPressed: _disconnect, child: const Text('Disconnect'))
-  //         : TextButton(
-  //             onPressed: () => _connect(mac.toString()),
-  //             child: const Text('Connect'),
-  //           ),
-  //   );
-  // }
+  @override
+  void initState() {
+    super.initState();
+    _prepare();
+    _statusTimer = Timer.periodic(Duration(seconds: 1), (_) async {
+      final isConnected = await PrintBluetoothThermal.connectionStatus;
+      if (!isConnected) {
+        ref.read(connectedMacProvider.notifier).state = null;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -406,23 +254,6 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
                     },
                   ),
           ),
-
-          // Padding(
-          //   padding: const EdgeInsets.all(12.0),
-          //   child: Row(
-          //     children: [
-          //       Expanded(
-          //         child: ElevatedButton.icon(
-          //           icon: const Icon(Icons.print),
-          //           label: const Text('Print'),
-          //           onPressed: (connectedMac != null && !busy)
-          //               ? _printText
-          //               : null,
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
         ],
       ),
     );
@@ -431,6 +262,7 @@ class _BluetoothDevicesPageState extends ConsumerState<BluetoothDevicesPage> {
   @override
   void dispose() {
     _textController.dispose();
+    _statusTimer?.cancel();
     super.dispose();
   }
 }
