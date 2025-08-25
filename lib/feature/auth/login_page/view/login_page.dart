@@ -11,6 +11,7 @@ import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
+import 'package:edu_token_system_app/core/keys/edu_token_system_app_key.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
 import 'package:edu_token_system_app/core/model/login_info_model.dart';
 import 'package:edu_token_system_app/core/utils/utils.dart';
@@ -302,26 +303,26 @@ class _LoginPageState extends State<LoginPage> {
 
   /// Returns true if any entry in the list matches the provided credentials.
   Future<bool> isLoginMatch({
-  required List<LoginInfoModel> loginInfoList,
-  required String inputUsername,
-  required String inputPassword,
-}) async {
-  final u = inputUsername.trim().toLowerCase();
-  final p = inputPassword; // case-sensitive
+    required List<LoginInfoModel> loginInfoList,
+    required String inputUsername,
+    required String inputPassword,
+  }) async {
+    final u = inputUsername.trim().toLowerCase();
+    final p = inputPassword; // case-sensitive
 
-  for (final item in loginInfoList) {
-    final decUser = vbDecrypt(item.loginName!).trim().toLowerCase();
-    final decPass = vbDecrypt(item.password!).trim();
+    for (final item in loginInfoList) {
+      final decUser = vbDecrypt(item.loginName!).trim().toLowerCase();
+      final decPass = vbDecrypt(item.password!).trim();
 
-    if (decUser == u && decPass == p) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('saved_password', p);
+      if (decUser == u && decPass == p) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(savedPasswordKey, p);
 
-      return true;
+        return true;
+      }
     }
+    return false;
   }
-  return false;
-}
 
   String vbDecrypt(String input) {
     if (input.isEmpty) return '';
@@ -338,13 +339,6 @@ class _LoginPageState extends State<LoginPage> {
     return sb.toString();
   }
 
-  /// AES-CBC-PKCS7 decrypt helper.
-  /// - `base64Cipher` is the encrypted text in Base64 (as commonly produced by Java + CryptLib).
-  /// - `keyStr` and `ivStr` should be UTF-8 strings of the correct length:
-  ///    * For AES-128 use 16-char key and 16-char iv
-  ///    * For AES-256 use 32-char key (encrypt package supports 32 bytes keys).
-  ///
-  /// Returns plaintext (UTF-8).
   String aesDecryptBase64(String base64Cipher, String keyStr, String ivStr) {
     if (base64Cipher.isEmpty) return '';
     // Validate key/iv length
@@ -394,36 +388,16 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // String vbDecrypt(String? input) {
-  //   if (input == null) return '';
-
-  //   // Agar '€' mojood ho toh us se pehle ka part lo
-  //   final idx = input.indexOf('€');
-  //   final part = idx >= 0 ? input.substring(0, idx) : input;
-
-  //   if (part.isEmpty) return '';
-
-  //   final buffer = StringBuffer();
-  //   const key = 3; // XOR key
-
-  //   for (var i = 0; i < part.length; i++) {
-  //     final code = part.codeUnitAt(i);
-  //     final decoded = code ^ key;
-  //     buffer.writeCharCode(decoded);
-  //   }
-
-  //   return buffer.toString();
-  // }
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
-    const key = 'selectedDb';
+    final key = currentDatabseKey;
     await prefs.setString(key, seectedDatabase);
   }
 
   Future<String> _getSelectedDatabase() async {
     final prefs = await SharedPreferences.getInstance();
-    const key = 'selectedDb';
+    final key = currentDatabseKey;
     final selectedDb = prefs.getString(key);
     return selectedDb ?? 'Select Database'; // Default database if none selected
   }
@@ -580,7 +554,7 @@ class _LoginPageState extends State<LoginPage> {
               else
                 CustomButton(
                   name: 'Login In',
-                  onPressed:() => _isLoading ? null : _attemptLogin(),
+                  onPressed: () => _isLoading ? null : _attemptLogin(),
                 ),
               const SizedBox(height: 24),
               Center(
