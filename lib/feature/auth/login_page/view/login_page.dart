@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:edu_token_system_app/Config/app_config.dart';
-import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/Export/export.dart' hide Key;
 import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
 import 'package:edu_token_system_app/core/common/custom_button.dart';
@@ -16,6 +17,7 @@ import 'package:edu_token_system_app/core/utils/utils.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/custom_db_drop_down.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/widgets/settings_icon_dialog_design_widget.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
+import 'package:encrypt/encrypt.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -321,43 +323,97 @@ class _LoginPageState extends State<LoginPage> {
   return false;
 }
 
-  String vbDecrypt(String? input) {
-    if (input == null) return '';
+  String vbDecrypt(String input) {
+    if (input.isEmpty) return '';
+    if (input.contains('€')) {
+      input = input.substring(0, input.indexOf('€'));
+    }
+    final sb = StringBuffer();
+    const int power = 3;
+    for (int i = 0; i < input.length; i++) {
+      final int ascii = input.codeUnitAt(i);
+      final int resultAfterPower = ascii ^ power; // XOR with 3
+      sb.write(String.fromCharCode(resultAfterPower));
+    }
+    return sb.toString();
+  }
 
-    // Agar '€' mojood ho toh us se pehle ka part lo
-    final idx = input.indexOf('€');
-    final part = idx >= 0 ? input.substring(0, idx) : input;
-
-    if (part.isEmpty) return '';
-
-    final buffer = StringBuffer();
-    const key = 3; // XOR key
-
-    for (var i = 0; i < part.length; i++) {
-      final code = part.codeUnitAt(i);
-      final decoded = code ^ key;
-      buffer.writeCharCode(decoded);
+  /// AES-CBC-PKCS7 decrypt helper.
+  /// - `base64Cipher` is the encrypted text in Base64 (as commonly produced by Java + CryptLib).
+  /// - `keyStr` and `ivStr` should be UTF-8 strings of the correct length:
+  ///    * For AES-128 use 16-char key and 16-char iv
+  ///    * For AES-256 use 32-char key (encrypt package supports 32 bytes keys).
+  ///
+  /// Returns plaintext (UTF-8).
+  String aesDecryptBase64(String base64Cipher, String keyStr, String ivStr) {
+    if (base64Cipher.isEmpty) return '';
+    // Validate key/iv length
+    final keyBytes = utf8.encode(keyStr);
+    final ivBytes = utf8.encode(ivStr);
+    if (!(keyBytes.length == 16 ||
+        keyBytes.length == 24 ||
+        keyBytes.length == 32)) {
+      throw ArgumentError(
+        'Key must be 16/24/32 bytes long (UTF-8 chars). Current length: ${keyBytes.length}',
+      );
+    }
+    if (ivBytes.length != 16) {
+      throw ArgumentError(
+        'IV must be 16 bytes long (UTF-8 chars). Current length: ${ivBytes.length}',
+      );
     }
 
-    return buffer.toString();
+    final key = Key(Uint8List.fromList(keyBytes));
+    final iv = IV(Uint8List.fromList(ivBytes));
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));
+
+    // If base64Cipher includes newlines/spaces, trim them
+    final cleanBase64 = base64Cipher
+        .replaceAll('\n', '')
+        .replaceAll('\r', '')
+        .trim();
+
+    // encrypt.Encrypted.fromBase64 expects a valid base64
+    final encrypted = Encrypted.fromBase64(cleanBase64);
+
+    final decrypted = encrypter.decrypt(encrypted, iv: iv);
+    return decrypted;
   }
 
-  bool matchesCredentials({
-    required String inputUsername,
-    required String inputPassword,
-    required String dbLoginName, // value from DB row's LoginName
-    required String dbPassword, // value from DB row's Password
-  }) {
-    final decryptedUsername = vbDecrypt(dbLoginName);
-    final decryptedPassword = vbDecrypt(dbPassword);
-
-    final usernameMatches =
-        inputUsername.trim().toLowerCase() ==
-        decryptedUsername.trim().toLowerCase();
-    final passwordMatches = inputPassword == decryptedPassword;
-
-    return usernameMatches && passwordMatches;
+  /// Try decrypt with AES; if it fails (bad base64 or invalid key/iv),
+  /// this helper catches and returns null so caller can try alternatives.
+  String? tryAesDecryptBase64(
+    String base64Cipher,
+    String keyStr,
+    String ivStr,
+  ) {
+    try {
+      return aesDecryptBase64(base64Cipher, keyStr, ivStr);
+    } catch (e) {
+      return null;
+    }
   }
+
+  // String vbDecrypt(String? input) {
+  //   if (input == null) return '';
+
+  //   // Agar '€' mojood ho toh us se pehle ka part lo
+  //   final idx = input.indexOf('€');
+  //   final part = idx >= 0 ? input.substring(0, idx) : input;
+
+  //   if (part.isEmpty) return '';
+
+  //   final buffer = StringBuffer();
+  //   const key = 3; // XOR key
+
+  //   for (var i = 0; i < part.length; i++) {
+  //     final code = part.codeUnitAt(i);
+  //     final decoded = code ^ key;
+  //     buffer.writeCharCode(decoded);
+  //   }
+
+  //   return buffer.toString();
+  // }
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
