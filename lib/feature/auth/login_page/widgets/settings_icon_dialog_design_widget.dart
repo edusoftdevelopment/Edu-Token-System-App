@@ -10,9 +10,11 @@ class PasswordDialog extends StatefulWidget {
 }
 
 class _PasswordDialogState extends State<PasswordDialog> {
+  //! Controllers 
   final TextEditingController _passwordController = TextEditingController();
   String _errorMessage = '';
 
+  //! Validate Password
   void _validatePassword() {
     final password = _passwordController.text;
 

@@ -9,7 +9,6 @@ import 'package:edu_token_system_app/Config/app_config.dart';
 import 'package:edu_token_system_app/Export/export.dart' hide Key;
 import 'package:edu_token_system_app/Helper/mssql_helper.dart';
 import 'package:edu_token_system_app/core/common/common.dart';
-import 'package:edu_token_system_app/core/common/custom_button.dart';
 import 'package:edu_token_system_app/core/extension/extension.dart';
 import 'package:edu_token_system_app/core/keys/edu_token_system_app_key.dart';
 import 'package:edu_token_system_app/core/model/db_lists_model.dart';
@@ -307,16 +306,16 @@ class _LoginPageState extends State<LoginPage> {
     required String inputUsername,
     required String inputPassword,
   }) async {
-    final u = inputUsername.trim().toLowerCase();
-    final p = inputPassword; // case-sensitive
+    final userName = inputUsername.trim().toLowerCase();
+    final password = inputPassword; // case-sensitive
 
     for (final item in loginInfoList) {
       final decUser = vbDecrypt(item.loginName!).trim().toLowerCase();
       final decPass = vbDecrypt(item.password!).trim();
 
-      if (decUser == u && decPass == p) {
+      if (decUser == userName && decPass == password) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(savedPasswordKey, p);
+        await prefs.setString(savedPasswordKey, password);
 
         return true;
       }
@@ -330,10 +329,10 @@ class _LoginPageState extends State<LoginPage> {
       input = input.substring(0, input.indexOf('€'));
     }
     final sb = StringBuffer();
-    const int power = 3;
-    for (int i = 0; i < input.length; i++) {
-      final int ascii = input.codeUnitAt(i);
-      final int resultAfterPower = ascii ^ power; // XOR with 3
+    const power = 3;
+    for (var i = 0; i < input.length; i++) {
+      final ascii = input.codeUnitAt(i);
+      final resultAfterPower = ascii ^ power; // XOR with 3
       sb.write(String.fromCharCode(resultAfterPower));
     }
     return sb.toString();
@@ -391,13 +390,13 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _setDatabse({required String seectedDatabase}) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = currentDatabseKey;
+    final key = currentDatabaseKey;
     await prefs.setString(key, seectedDatabase);
   }
 
   Future<String> _getSelectedDatabase() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = currentDatabseKey;
+    final key = currentDatabaseKey;
     final selectedDb = prefs.getString(key);
     return selectedDb ?? 'Select Database'; // Default database if none selected
   }

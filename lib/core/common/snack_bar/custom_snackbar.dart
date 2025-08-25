@@ -1,10 +1,7 @@
-import 'package:flutter/material.dart';
+part of '../common.dart';
 
-/// Reusable gradient SnackBar helper.
-/// Usage:
-///   CustomSnackbar.show(context, 'Bluetooth permission is Compulsory');
 class CustomSnackbar {
-  /// Show the gradient snackbar
+  ///! Show the gradient snackbar
   static void show(
     BuildContext context,
     String message, {
@@ -12,8 +9,8 @@ class CustomSnackbar {
     IconData icon = Icons.bluetooth,
     Duration duration = const Duration(seconds: 2),
     EdgeInsets margin = const EdgeInsets.symmetric(
-      horizontal: 16.0,
-      vertical: 8.0,
+      horizontal: 16,
+      vertical: 8,
     ),
     List<Color> gradientColors = const [Color(0xFF6A11CB), Color(0xFF2575FC)],
     double borderRadius = 12.0,
@@ -38,34 +35,30 @@ class CustomSnackbar {
 
 /// Internal widget that renders the actual gradient content.
 class _SnackBarContent extends StatelessWidget {
+  const _SnackBarContent({
+    required this.message,
+    required this.icon,
+    required this.gradientColors,
+    required this.borderRadius,
+  });
   final String message;
   final IconData icon;
   final List<Color> gradientColors;
   final double borderRadius;
 
-  const _SnackBarContent({
-    Key? key,
-    required this.message,
-    required this.icon,
-    required this.gradientColors,
-    required this.borderRadius,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
           colors: gradientColors,
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: const [
           BoxShadow(
             color: Colors.black26,
-            blurRadius: 8.0,
+            blurRadius: 8,
             offset: Offset(0, 4),
           ),
         ],

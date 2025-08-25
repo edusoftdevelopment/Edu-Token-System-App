@@ -1,7 +1,4 @@
-import 'package:edu_token_system_app/Export/export.dart';
-import 'package:edu_token_system_app/core/extension/extension.dart';
-import 'package:edu_token_system_app/feature/history/view/history_page.dart';
-
+part of 'common.dart';
 class CustomAppDrawer extends StatelessWidget {
   const CustomAppDrawer({super.key});
 

@@ -1,6 +1,7 @@
 // ignore_for_file: use_if_null_to_convert_nulls_to_bools
 
 import 'package:edu_token_system_app/Export/export.dart';
+import 'package:edu_token_system_app/core/keys/edu_token_system_app_key.dart';
 import 'package:edu_token_system_app/feature/auth/login_page/view/login_page.dart';
 import 'package:edu_token_system_app/feature/new_token/add_new_token_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,7 +39,7 @@ class EduTokenSystem extends StatelessWidget {
   
   Future<bool> _isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedPassword = prefs.getString('saved_password');
+    final savedPassword = prefs.getString(savedPasswordKey);
     return savedPassword != null && savedPassword.isNotEmpty;
   }
 }

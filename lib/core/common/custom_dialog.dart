@@ -1,6 +1,4 @@
-import 'package:edu_token_system_app/core/utils/utils.dart';
-import 'package:flutter/material.dart';
-
+part of 'common.dart';
 class DialogHelper {
   /// Show Error Dialog (Reusable)
   static Future<void> showErrorDialog({

@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 
 class MssqlHelper {
-  final _db = MssqlConnection.getInstance();
+  final MssqlConnection _db = MssqlConnection.getInstance();
 
   Future<void> connect({
     required String ip,
